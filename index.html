@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>店舗作業タイマー</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f1419">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+ :root{--bg:#0f1419;--card:#1a2230;--accent:#4a9eff;--ok:#2ecc71;--warn:#f1c40f;--txt:#e6edf3;--mut:#8b98a5;--danger:#e74c3c;}
+ *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+ body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--txt);font-size:16px;}
+ .wrap{max-width:520px;margin:0 auto;padding:12px;}
+ h1{font-size:18px;margin:8px 0;}
+ .card{background:var(--card);border-radius:12px;padding:14px;margin:10px 0;}
+ .row{display:flex;align-items:center;gap:8px;}
+ .row.sb{justify-content:space-between;}
+ button{font-family:inherit;font-size:16px;border:none;border-radius:10px;padding:12px 14px;color:#fff;background:#334a5e;cursor:pointer;}
+ button:active{filter:brightness(1.25);}
+ .btn-accent{background:var(--accent);} .btn-ok{background:var(--ok);} .btn-warn{background:var(--warn);color:#222;} .btn-ghost{background:#2a3340;}
+ .big{font-size:20px;font-weight:bold;padding:18px;width:100%;}
+ input{font-family:inherit;font-size:16px;background:#0d1117;border:1px solid #30363d;color:var(--txt);border-radius:8px;padding:8px;width:80px;text-align:center;}
+ input.date{width:150px;}
+ .badge{font-size:12px;padding:3px 9px;border-radius:20px;background:#334a5e;color:var(--mut);}
+ .badge.done{background:rgba(46,204,113,.2);color:var(--ok);}
+ .badge.active{background:rgba(74,158,255,.25);color:var(--accent);}
+ .store-item{display:flex;align-items:center;justify-content:space-between;padding:14px;border-radius:10px;margin:6px 0;background:#0d1117;cursor:pointer;}
+ .store-item:active{background:#162030;}
+ .store-item .nm{font-weight:bold;font-size:17px;}
+ .step{display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:10px;margin:6px 0;background:#0d1117;cursor:pointer;}
+ .step.cur{background:rgba(74,158,255,.15);border:1px solid var(--accent);}
+ .step.done{opacity:.6;}
+ .step .nm{flex:1;}
+ .step .tm{font-variant-numeric:tabular-nums;font-weight:bold;min-width:64px;text-align:right;}
+ .timer{font-size:46px;font-weight:bold;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0 2px;}
+ .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+ .mut{color:var(--mut);font-size:13px;}
+ .qrow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;}
+ .pu{display:flex;justify-content:space-between;padding:9px 10px;background:#0d1117;border-radius:8px;margin:5px 0;}
+ .pu .v{color:var(--accent);font-weight:bold;font-variant-numeric:tabular-nums;}
+ textarea{width:100%;background:#0d1117;border:1px solid #30363d;color:var(--txt);border-radius:8px;padding:8px;font-family:inherit;font-size:15px;}
+ .hide{display:none;}
+ .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#000;padding:11px 18px;border-radius:22px;opacity:0;transition:.3s;pointer-events:none;z-index:9;}
+ .toast.show{opacity:.95;}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <!-- ===== HOME ===== -->
+ <div id="home">
+  <h1>🕘 店舗作業タイマー <span class="mut" style="font-size:12px">MVP v0</span></h1>
+  <div class="card">
+   <div class="row sb"><span class="mut">日付</span><input class="date" type="date" id="dateInput" onchange="changeDate(this.value)"></div>
+   <div class="row sb" style="margin-top:10px"><span class="mut">今日のEOS</span><input type="number" id="eosToday" placeholder="例 269" oninput="setEos(this.value)"></div>
+   <div class="mut" style="margin-top:6px">全店の商品種類数(同一商品は複数店でも1)。~200少なめ / 300多め</div>
+  </div>
+  <div id="storeList"></div>
+  <div class="card">
+   <div class="grid2">
+    <button class="btn-ghost" onclick="exportJSON()">⬇ エクスポート</button>
+    <button class="btn-ghost" onclick="document.getElementById('importFile').click()">⬆ インポート</button>
+   </div>
+   <input type="file" id="importFile" accept=".json,application/json" class="hide" onchange="importJSON(event)">
+   <button class="btn-ghost" style="width:100%;margin-top:8px" onclick="resetDay()">この日をリセット</button>
+  </div>
+  <div class="mut" style="text-align:center">計測=店到着〜出発の作業時間（車移動は測らない）。異常はメモ欄へ。</div>
+ </div>
+
+ <!-- ===== STORE ===== -->
+ <div id="store" class="hide">
+  <div class="row sb">
+   <button class="btn-ghost" onclick="goHome()">← 戻る</button>
+   <h1 id="storeName" style="margin:0"></h1>
+   <span id="storeTotalBadge" class="badge"></span>
+  </div>
+
+  <div class="card">
+   <div class="row sb" onclick="toggleQty()" style="cursor:pointer"><b>数量（任意・計測前に）</b><span class="mut" id="qtyToggle">▼</span></div>
+   <div id="qtyBox"></div>
+  </div>
+
+  <div class="card">
+   <div class="timer" id="timerDisp">00:00</div>
+   <div class="mut" style="text-align:center" id="curStepName">—</div>
+   <div class="grid2" style="margin-top:12px">
+    <button class="btn-ok big" id="btnNext" onclick="nextStart()">▶ 開始</button>
+    <button class="btn-warn big hide" id="btnPause" onclick="pause()">⏸ 一時停止</button>
+   </div>
+   <div class="grid2" style="margin-top:8px">
+    <button class="btn-ghost" onclick="prevStep()">◀ 戻る</button>
+    <button class="btn-ghost" onclick="skipStep()">スキップ ⏭</button>
+   </div>
+  </div>
+
+  <div class="card">
+   <b>ステップ</b> <span class="mut">（タップで時間を手修正）</span>
+   <div id="stepList"></div>
+   <div class="step" style="background:none;border-top:1px solid #30363d;border-radius:0">
+    <div class="nm"><b>合計</b><span class="mut" id="totalNote"></span></div><div class="tm" id="stepTotal">0:00:00</div>
+   </div>
+  </div>
+
+  <div class="card">
+   <b>○○あたり（分:秒）</b>
+   <div id="puList" style="margin-top:6px"></div>
+   <div class="mut" id="puHint" style="margin-top:4px"></div>
+  </div>
+
+  <div class="card">
+   <b>メモ</b>
+   <textarea id="memo" rows="2" placeholder="異常・中断・特記事項など" oninput="setMemo(this.value)"></textarea>
+  </div>
+
+  <button class="btn-ghost" style="width:100%;color:var(--danger);border:1px solid var(--danger)" onclick="resetStore()">🗑 この店をリセット</button>
+ </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+// ===== 定義 =====
+const PRESET = {
+  A:{steps:["冷食","アイス"], qty:["アイス数","冷食数"], exclude:[]},
+  C:{steps:["積み下ろし+検品","アイス","バラ","冷食","前出し","チェック+片付け","週次チェック(任意)"], qty:["アイス数","冷食数","オリコン数","バラ数"], exclude:["週次チェック(任意)"]},
+  S:{steps:["積み下ろし","検品+陳列"], qty:["ケース(アイス+冷食)数"], exclude:[]},
+};
+const COURSE = [["A-K","A"],["C-T","C"],["S-T","S"],["S-F","S"],["C-A","C"],["C-N","C"]];
+const typeOf = id => (COURSE.find(c=>c[0]===id)||[])[1];
+
+// ===== 状態 =====
+let DB = loadDB();
+let curDate = todayStr();
+let curStore = null;
+let ticker = null;
+
+function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function loadDB(){try{const o=JSON.parse(localStorage.getItem("storeTimer")); return (o&&o.days)?o:{days:{}};}catch(e){return {days:{}};}}
+function saveDB(){localStorage.setItem("storeTimer",JSON.stringify(DB));}
+function day(){ if(!DB.days[curDate]) DB.days[curDate]={eos:null,stores:{}}; return DB.days[curDate]; }
+function store(id){
+  const d=day();
+  if(!d.stores[id]){
+    const t=typeOf(id);
+    d.stores[id]={type:t, qty:{}, steps:PRESET[t].steps.map(n=>({name:n,sec:0,done:false})), memo:"", cur:0, running:false, startAt:null};
+  }
+  return d.stores[id];
+}
+
+// ===== タイマー計算 =====
+function elapsed(s){ return (s.running && s.startAt) ? Math.round((Date.now()-s.startAt)/1000) : 0; }
+function liveSec(s,i){ const st=s.steps[i]; if(!st)return 0; return st.sec + ((s.running&&s.cur===i)?elapsed(s):0); }
+function secOfName(s,name){ const i=s.steps.findIndex(x=>x.name===name); return i<0?0:liveSec(s,i); }
+function totalSec(s){ const ex=PRESET[s.type].exclude; let v=0; s.steps.forEach((st,i)=>{ if(!ex.includes(st.name)) v+=liveSec(s,i); }); return v; }
+function fmtClock(sec){ sec=Math.round(sec); const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; return h+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"); }
+function fmtMS(sec){ if(sec==null||!isFinite(sec))return "—"; sec=Math.round(sec); return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }
+function fmtTimer(sec){ sec=Math.round(sec); const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"); }
+
+// ===== per-unit =====
+function perUnit(s){
+  const q=s.qty, out=[]; const t=s.type;
+  const num = k => { const v=parseFloat(q[k]); return isFinite(v)&&v>0 ? v : 0; };
+  if(t==="A"||t==="C"){
+    const it=secOfName(s,"アイス"), ft=secOfName(s,"冷食");
+    const iq=num("アイス数"), fq=num("冷食数");
+    if(iq+fq>0) out.push(["ケースあたり", fmtMS((it+ft)/(iq+fq))]);
+    if(iq>0) out.push(["アイスあたり", fmtMS(it/iq)]);
+    if(fq>0) out.push(["冷食あたり", fmtMS(ft/fq)]);
+  }
+  if(t==="C"){
+    const bt = secOfName(s,"バラ");
+    if(num("バラ数")>0) out.push(["バラあたり", fmtMS(bt/num("バラ数"))]);
+    if(num("オリコン数")>0) out.push(["オリコンあたり", fmtMS(bt/num("オリコン数"))]);
+  }
+  if(t==="S"){
+    if(num("ケース(アイス+冷食)数")>0) out.push(["ケースあたり", fmtMS(totalSec(s)/num("ケース(アイス+冷食)数"))]);
+  }
+  return out;
+}
+function caseCount(s){
+  const q=s.qty; const num=k=>{const v=parseFloat(q[k]);return isFinite(v)?v:0;};
+  if(s.type==="S") return num("ケース(アイス+冷食)数");
+  return num("アイス数")+num("冷食数");
+}
+
+// ===== 画面遷移 =====
+function show(id){ document.getElementById("home").classList.toggle("hide", id!=="home"); document.getElementById("store").classList.toggle("hide", id!=="store"); }
+function goHome(){ stopTicker(); curStore=null; show("home"); renderHome(); }
+function openStore(id){ curStore=id; store(id); show("store"); renderStore(); startTicker(); }
+
+// ===== HOME描画 =====
+function renderHome(){
+  document.getElementById("dateInput").value = curDate;
+  document.getElementById("eosToday").value = day().eos ?? "";
+  const list = document.getElementById("storeList");
+  list.innerHTML = "";
+  COURSE.forEach(([id])=>{
+    const d=day(); const s=d.stores[id];
+    let badge='<span class="badge">未計測</span>', sub="";
+    if(s){
+      const anyTime = s.steps.some(x=>x.sec>0);
+      const allDone = s.steps.filter(x=>!PRESET[s.type].exclude.includes(x.name)).every(x=>x.done);
+      if(allDone && anyTime){ badge='<span class="badge done">完了 '+fmtClock(totalSec(s))+'</span>'; }
+      else if(anyTime || s.running){ badge='<span class="badge active">計測中 '+fmtClock(totalSec(s))+'</span>'; }
+    }
+    const div=document.createElement("div");
+    div.className="store-item";
+    div.onclick=()=>openStore(id);
+    div.innerHTML='<div><div class="nm">'+id+'店</div><div class="mut">'+typeName(typeOf(id))+'</div></div>'+badge;
+    list.appendChild(div);
+  });
+}
+function typeName(t){return t==="A"?"A: 冷食/アイス":t==="C"?"C: フル":"S: 積下/検品+陳列";}
+
+// ===== STORE描画 =====
+function renderStore(){
+  const s=store(curStore);
+  document.getElementById("storeName").textContent=curStore+"店";
+  // 数量
+  const qb=document.getElementById("qtyBox");
+  qb.innerHTML="";
+  PRESET[s.type].qty.forEach(k=>{
+    const row=document.createElement("div"); row.className="qrow";
+    row.innerHTML='<span>'+k+'</span>';
+    const inp=document.createElement("input"); inp.type="number"; inp.value=s.qty[k]??""; inp.placeholder="—";
+    inp.oninput=()=>{ s.qty[k]=inp.value; saveDB(); renderPU(); };
+    row.appendChild(inp); qb.appendChild(row);
+  });
+  if(s.type!=="S"){
+    const cc=document.createElement("div"); cc.className="qrow";
+    cc.innerHTML='<span class="mut">ケース数 (=アイス+冷食)</span><b id="caseCount" style="color:var(--accent)">—</b>';
+    qb.appendChild(cc);
+  }
+  // ステップ
+  const sl=document.getElementById("stepList"); sl.innerHTML="";
+  s.steps.forEach((st,i)=>{
+    const div=document.createElement("div");
+    div.className="step"+(i===s.cur?" cur":"")+(st.done?" done":"");
+    div.onclick=()=>editStep(i);
+    const ex=PRESET[s.type].exclude.includes(st.name)?' <span class="mut">(合計外)</span>':'';
+    div.innerHTML='<div class="nm">'+(st.done?"✓ ":"")+st.name+ex+'</div><div class="tm" id="tm'+i+'">'+fmtClock(liveSec(s,i)).replace(/^0:/,"")+'</div>';
+    sl.appendChild(div);
+  });
+  document.getElementById("memo").value=s.memo||"";
+  const tn=document.getElementById("totalNote");
+  tn.textContent = PRESET[s.type].exclude.length? " （週次は除外）":"";
+  updateButtons();
+  renderPU();
+  updateLive();
+}
+function renderPU(){
+  const s=store(curStore);
+  const pl=document.getElementById("puList"); pl.innerHTML="";
+  const pu=perUnit(s);
+  if(pu.length===0){ pl.innerHTML='<div class="mut">数量を入れると ○○あたり が出ます</div>'; }
+  pu.forEach(([k,v])=>{ const d=document.createElement("div"); d.className="pu"; d.innerHTML='<span>'+k+'</span><span class="v">'+v+'</span>'; pl.appendChild(d); });
+  const cc=document.getElementById("caseCount"); if(cc) cc.textContent = caseCount(s)||"—";
+  document.getElementById("puHint").textContent = s.type==="C"
+    ? "ケース=(アイス+冷食)/ケース数 ／ アイス・冷食=各時間/各数 ／ バラ=バラ時間/バラ数 ／ オリコン=バラ時間/オリコン数"
+    : s.type==="A" ? "ケース=(アイス+冷食)/ケース数 ／ アイス・冷食=各時間/各数"
+    : "ケース=合計時間/ケース数";
+}
+function updateButtons(){
+  const s=store(curStore);
+  const bn=document.getElementById("btnNext"), bp=document.getElementById("btnPause");
+  if(s.running){ bn.textContent="次へ ▶"; bp.classList.remove("hide"); }
+  else { bn.textContent = s.steps.some(x=>x.sec>0||x.done) ? "▶ 再開" : "▶ 開始"; bp.classList.add("hide"); }
+}
+function updateLive(){
+  const s=store(curStore); if(!s)return;
+  const st=s.steps[s.cur];
+  document.getElementById("timerDisp").textContent = fmtTimer(st?liveSec(s,s.cur):0);
+  document.getElementById("curStepName").textContent = st? (st.name+(s.running?" ⏱":"")) : "完了";
+  const tm=document.getElementById("tm"+s.cur); if(tm&&st) tm.textContent=fmtClock(liveSec(s,s.cur)).replace(/^0:/,"");
+  document.getElementById("stepTotal").textContent=fmtClock(totalSec(s));
+  document.getElementById("storeTotalBadge").textContent=fmtClock(totalSec(s));
+  if(s.running) renderPU();
+}
+function startTicker(){ stopTicker(); ticker=setInterval(updateLive,500); }
+function stopTicker(){ if(ticker){clearInterval(ticker);ticker=null;} }
+
+// ===== 操作 =====
+function nextStart(){
+  const s=store(curStore);
+  if(!s.running){ s.running=true; s.startAt=Date.now(); }
+  else {
+    const st=s.steps[s.cur]; st.sec+=elapsed(s); st.done=true;
+    if(s.cur<s.steps.length-1){ s.cur++; s.startAt=Date.now(); }
+    else { s.running=false; s.startAt=null; toast("店 完了 🎉"); }
+  }
+  saveDB(); renderStore();
+}
+function pause(){
+  const s=store(curStore);
+  if(s.running){ const st=s.steps[s.cur]; if(st) st.sec+=elapsed(s); s.running=false; s.startAt=null; }
+  saveDB(); renderStore();
+}
+function prevStep(){
+  const s=store(curStore);
+  const st=s.steps[s.cur]; if(st&&s.running){ st.sec+=elapsed(s); }
+  s.running=false; s.startAt=null;
+  if(s.cur>0){ s.cur--; s.steps[s.cur].done=false; }
+  saveDB(); renderStore();
+}
+function skipStep(){
+  const s=store(curStore);
+  const st=s.steps[s.cur]; if(st){ if(s.running)st.sec+=elapsed(s); st.done=true; }
+  if(s.cur<s.steps.length-1){ s.cur++; if(!s.running)s.startAt=null; else s.startAt=Date.now(); }
+  else { s.running=false; s.startAt=null; }
+  saveDB(); renderStore();
+}
+function editStep(i){
+  const s=store(curStore); const st=s.steps[i];
+  const cur=fmtMS(st.sec);
+  const v=prompt(st.name+" の時間（分:秒 で入力）", cur);
+  if(v==null)return;
+  let sec=null;
+  if(v.indexOf(":")>=0){ const p=v.split(":"); sec=(parseInt(p[0])||0)*60+(parseInt(p[1])||0); }
+  else { const f=parseFloat(v); if(isFinite(f)) sec=Math.round(f*60); }
+  if(sec!=null&&sec>=0){ st.sec=sec; if(s.running&&s.cur===i)s.startAt=Date.now(); saveDB(); renderStore(); }
+}
+function setMemo(v){ store(curStore).memo=v; saveDB(); }
+function resetStore(){ if(!confirm(curStore+"店 の計測・数量・メモを全部消す？")) return; delete day().stores[curStore]; store(curStore); saveDB(); renderStore(); toast(curStore+"店 をリセット"); }
+function toggleQty(){ const b=document.getElementById("qtyBox"); const t=document.getElementById("qtyToggle"); b.classList.toggle("hide"); t.textContent=b.classList.contains("hide")?"▶":"▼"; }
+
+// ===== HOME操作 =====
+function changeDate(v){ if(v){ curDate=v; renderHome(); } }
+function setEos(v){ day().eos = v===""?null:Number(v); saveDB(); }
+function resetDay(){ if(confirm(curDate+" のデータを消す？")){ delete DB.days[curDate]; saveDB(); renderHome(); } }
+
+// ===== 入出力 =====
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="store-timer-backup.json"; document.body.appendChild(a); a.click(); a.remove();
+  toast("エクスポートした");
+}
+function importJSON(e){
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(d&&d.days){ DB=d; saveDB(); renderHome(); toast("インポートした"); } else toast("形式が違う"); }catch(err){ toast("読み込み失敗"); } };
+  r.readAsText(f); e.target.value="";
+}
+
+// ===== toast =====
+let toastT=null;
+function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1600); }
+
+// ===== init =====
+renderHome();
+if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('./sw.js').catch(()=>{})); }
+</script>
+</body>
+</html>
