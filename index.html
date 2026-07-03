@@ -12,153 +12,225 @@
 <style>
  :root{--bg:#0f1419;--card:#1a2230;--accent:#4a9eff;--ok:#2ecc71;--warn:#f1c40f;--txt:#e6edf3;--mut:#8b98a5;--danger:#e74c3c;}
  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
- body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--txt);font-size:16px;}
- .wrap{max-width:520px;margin:0 auto;padding:12px;}
+ html,body{height:100%;}
+ body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--txt);font-size:16px;display:flex;flex-direction:column;overflow:hidden;}
+ #hdr{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#0d1117;border-bottom:1px solid #202938;}
+ #hdrTitle{font-weight:bold;font-size:15px;}
+ #hdr button{padding:7px 12px;font-size:14px;}
+ .screen{flex:1 1 auto;overflow-y:auto;padding:12px;max-width:520px;width:100%;margin:0 auto;padding-bottom:90px;}
  h1{font-size:18px;margin:8px 0;}
  .card{background:var(--card);border-radius:12px;padding:14px;margin:10px 0;}
  .row{display:flex;align-items:center;gap:8px;}
  .row.sb{justify-content:space-between;}
  button{font-family:inherit;font-size:16px;border:none;border-radius:10px;padding:12px 14px;color:#fff;background:#334a5e;cursor:pointer;}
  button:active{filter:brightness(1.25);}
+ button:disabled{opacity:.4;}
  .btn-accent{background:var(--accent);} .btn-ok{background:var(--ok);} .btn-warn{background:var(--warn);color:#222;} .btn-ghost{background:#2a3340;}
  .big{font-size:20px;font-weight:bold;padding:18px;width:100%;}
- input{font-family:inherit;font-size:16px;background:#0d1117;border:1px solid #30363d;color:var(--txt);border-radius:8px;padding:8px;width:80px;text-align:center;}
- input.date{width:150px;}
+ .wfull{width:100%;}
+ input,select{font-family:inherit;font-size:16px;background:#0d1117;border:1px solid #30363d;color:var(--txt);border-radius:8px;padding:8px;width:90px;text-align:center;}
+ input.date{width:150px;} input.wide{width:100%;text-align:left;}
+ input.kpfield{caret-color:transparent;}
+ input.kpfocus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
  .badge{font-size:12px;padding:3px 9px;border-radius:20px;background:#334a5e;color:var(--mut);}
  .badge.done{background:rgba(46,204,113,.2);color:var(--ok);}
  .badge.active{background:rgba(74,158,255,.25);color:var(--accent);}
- .store-item{display:flex;align-items:center;justify-content:space-between;padding:14px;border-radius:10px;margin:6px 0;background:#0d1117;cursor:pointer;}
+ .store-item{display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:10px;margin:6px 0;background:#0d1117;cursor:pointer;}
  .store-item:active{background:#162030;}
  .store-item .nm{font-weight:bold;font-size:17px;}
- .step{display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:10px;margin:6px 0;background:#0d1117;cursor:pointer;}
+ .step{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:11px 12px;border-radius:10px;margin:6px 0;background:#0d1117;cursor:pointer;}
  .step.cur{background:rgba(74,158,255,.15);border:1px solid var(--accent);}
  .step.done{opacity:.6;}
  .step .nm{flex:1;}
- .step .tm{font-variant-numeric:tabular-nums;font-weight:bold;min-width:64px;text-align:right;}
- .timer{font-size:46px;font-weight:bold;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0 2px;}
+ .step .tm{font-variant-numeric:tabular-nums;font-weight:bold;min-width:60px;text-align:right;}
+ .step .edit{background:none;padding:4px 8px;font-size:15px;}
+ .timer{font-size:44px;font-weight:bold;text-align:center;font-variant-numeric:tabular-nums;margin:4px 0 2px;}
  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
  .mut{color:var(--mut);font-size:13px;}
- .qrow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;}
- .pu{display:flex;justify-content:space-between;padding:9px 10px;background:#0d1117;border-radius:8px;margin:5px 0;}
+ .qrow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;gap:8px;}
+ .pu{display:flex;justify-content:space-between;padding:8px 10px;background:#0d1117;border-radius:8px;margin:4px 0;font-size:14px;}
  .pu .v{color:var(--accent);font-weight:bold;font-variant-numeric:tabular-nums;}
  textarea{width:100%;background:#0d1117;border:1px solid #30363d;color:var(--txt);border-radius:8px;padding:8px;font-family:inherit;font-size:15px;}
- .hide{display:none;}
- .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#000;padding:11px 18px;border-radius:22px;opacity:0;transition:.3s;pointer-events:none;z-index:9;}
+ .hide{display:none !important;}
+ .chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;}
+ .chip{padding:8px 13px;border-radius:20px;background:#2a3340;font-size:14px;cursor:pointer;position:relative;}
+ .chip.on{background:var(--accent);font-weight:bold;}
+ .chip .dot{position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:var(--warn);}
+ .todo-row{display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid #202938;}
+ .todo-row span{flex:1;}
+ .todo-row .done-txt{text-decoration:line-through;color:var(--mut);}
+ .todo-row input[type=checkbox]{width:22px;height:22px;}
+ .todo-row .del{background:none;color:var(--danger);padding:4px 8px;}
+ .chk{display:flex;align-items:center;gap:12px;padding:14px;background:#0d1117;border-radius:10px;margin:8px 0;font-size:17px;cursor:pointer;}
+ .chk input{width:26px;height:26px;}
+ .ord{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#0d1117;border-radius:10px;margin:6px 0;}
+ .ord .nm{flex:1;font-weight:bold;}
+ .ord.skip{opacity:.45;}
+ .ord button{padding:7px 11px;font-size:15px;}
+ .hbox{background:#0d1117;border-radius:10px;padding:10px;margin:6px 0;white-space:pre-wrap;font-size:14px;border-left:3px solid var(--warn);}
+ .drawerbar{position:fixed;bottom:0;left:0;right:0;background:#0d1117;border-top:1px solid #202938;display:flex;gap:5px;padding:8px;justify-content:center;z-index:5;}
+ .drawerbar button{flex:1;max-width:96px;padding:9px 4px;font-size:12px;position:relative;background:#2a3340;}
+ .drawerbar button .dot{position:absolute;top:2px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--warn);}
+ .overlay{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column;}
+ .overlay .inner{flex:1;overflow-y:auto;padding:12px;max-width:520px;width:100%;margin:0 auto;}
+ .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30;}
+ .sheet{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-radius:16px 16px 0 0;z-index:31;max-height:75dvh;display:flex;flex-direction:column;}
+ .sheet .sh{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #202938;font-weight:bold;}
+ .sheet .sc{overflow-y:auto;padding:12px 16px 20px;}
+ .keypad{position:fixed;bottom:0;left:0;right:0;background:#0d1117;border-top:1px solid #202938;z-index:40;padding:8px;max-width:520px;margin:0 auto;}
+ .keypad .kgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+ .keypad button{padding:14px;font-size:20px;font-weight:bold;background:#2a3340;}
+ .keypad .kok{background:var(--ok);}
+ body.kp-open .screen{padding-bottom:250px;}
+ body.kp-open .sheet .sc{padding-bottom:240px;}
+ .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#000;padding:11px 18px;border-radius:22px;opacity:0;transition:.3s;pointer-events:none;z-index:50;}
  .toast.show{opacity:.95;}
 </style>
 </head>
 <body>
-<div class="wrap">
- <!-- ===== HOME ===== -->
- <div id="home">
-  <h1>🕘 店舗作業タイマー <span class="mut" style="font-size:12px">MVP v0</span></h1>
-  <div class="card">
-   <div class="row sb"><span class="mut">日付</span><input class="date" type="date" id="dateInput" onchange="changeDate(this.value)"></div>
-   <div class="row sb" style="margin-top:10px"><span class="mut">今日のEOS</span><input type="number" id="eosToday" placeholder="例 269" oninput="setEos(this.value)"></div>
-   <div class="mut" style="margin-top:6px">全店の商品種類数(同一商品は複数店でも1)。~200少なめ / 300多め</div>
-  </div>
-  <div id="storeList"></div>
-  <div class="card">
-   <div class="grid2">
-    <button class="btn-ghost" onclick="exportJSON()">⬇ エクスポート</button>
-    <button class="btn-ghost" onclick="document.getElementById('importFile').click()">⬆ インポート</button>
-   </div>
-   <input type="file" id="importFile" accept=".json,application/json" class="hide" onchange="importJSON(event)">
-   <button class="btn-ghost" style="width:100%;margin-top:8px" onclick="resetDay()">この日をリセット</button>
-  </div>
-  <div class="mut" style="text-align:center">計測=店到着〜出発の作業時間（車移動は測らない）。異常はメモ欄へ。</div>
- </div>
-
- <!-- ===== STORE ===== -->
- <div id="store" class="hide">
-  <div class="row sb">
-   <button class="btn-ghost" onclick="goHome()">← 戻る</button>
-   <h1 id="storeName" style="margin:0"></h1>
-   <span id="storeTotalBadge" class="badge"></span>
-  </div>
-
-  <div class="card">
-   <div class="row sb" onclick="toggleQty()" style="cursor:pointer"><b>数量（任意・計測前に）</b><span class="mut" id="qtyToggle">▼</span></div>
-   <div id="qtyBox"></div>
-  </div>
-
-  <div class="card">
-   <div class="timer" id="timerDisp">00:00</div>
-   <div class="mut" style="text-align:center" id="curStepName">—</div>
-   <div class="grid2" style="margin-top:12px">
-    <button class="btn-ok big" id="btnNext" onclick="nextStart()">▶ 開始</button>
-    <button class="btn-warn big hide" id="btnPause" onclick="pause()">⏸ 一時停止</button>
-   </div>
-   <div class="grid2" style="margin-top:8px">
-    <button class="btn-ghost" onclick="prevStep()">◀ 戻る</button>
-    <button class="btn-ghost" onclick="skipStep()">スキップ ⏭</button>
-   </div>
-  </div>
-
-  <div class="card">
-   <b>ステップ</b> <span class="mut">（タップで時間を手修正）</span>
-   <div id="stepList"></div>
-   <div class="step" style="background:none;border-top:1px solid #30363d;border-radius:0">
-    <div class="nm"><b>合計</b><span class="mut" id="totalNote"></span></div><div class="tm" id="stepTotal">0:00:00</div>
-   </div>
-  </div>
-
-  <div class="card">
-   <b>○○あたり（分:秒）</b>
-   <div id="puList" style="margin-top:6px"></div>
-   <div class="mut" id="puHint" style="margin-top:4px"></div>
-  </div>
-
-  <div class="card">
-   <b>メモ</b>
-   <textarea id="memo" rows="2" placeholder="異常・中断・特記事項など" oninput="setMemo(this.value)"></textarea>
-  </div>
-
-  <button class="btn-ghost" style="width:100%;color:var(--danger);border:1px solid var(--danger)" onclick="resetStore()">🗑 この店をリセット</button>
+<div id="hdr">
+ <span id="hdrTitle">🕘 店舗作業タイマー</span>
+ <div class="row">
+  <button class="btn-ghost" id="btnHome" onclick="confirmHome()">🏠</button>
+  <button class="btn-ghost" onclick="openList()">📋 一覧</button>
  </div>
 </div>
+
+<div id="scrTitle" class="screen hide"></div>
+<div id="scrCourse" class="screen hide"></div>
+<div id="scrInput" class="screen hide"></div>
+<div id="scrPlan" class="screen hide"></div>
+<div id="scrLoad" class="screen hide"></div>
+<div id="scrOrder" class="screen hide"></div>
+<div id="scrCheck" class="screen hide"></div>
+<div id="scrStore" class="screen hide"></div>
+<div id="scrReturn" class="screen hide"></div>
+<div id="scrHandover" class="screen hide"></div>
+
+<div id="listOv" class="overlay hide">
+ <div id="hdr2" style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#0d1117;border-bottom:1px solid #202938;">
+  <b>⑭ 一覧モード</b>
+  <button class="btn-ghost" onclick="closeList()">✕ 閉じる</button>
+ </div>
+ <div class="inner" id="listInner"></div>
+</div>
+
+<div id="sheetBg" class="sheet-bg hide" onclick="closeSheet()"></div>
+<div id="sheetEl" class="sheet hide">
+ <div class="sh"><span id="sheetTitle"></span><button class="btn-ghost" onclick="closeSheet()">✕</button></div>
+ <div class="sc" id="sheetBody"></div>
+</div>
+
+<div id="keypad" class="keypad hide">
+ <div class="kgrid">
+  <button onclick="kpPress('1')">1</button><button onclick="kpPress('2')">2</button><button onclick="kpPress('3')">3</button>
+  <button onclick="kpPress('4')">4</button><button onclick="kpPress('5')">5</button><button onclick="kpPress('6')">6</button>
+  <button onclick="kpPress('7')">7</button><button onclick="kpPress('8')">8</button><button onclick="kpPress('9')">9</button>
+  <button onclick="kpPress('BS')">⌫</button><button onclick="kpPress('0')">0</button><button class="kok" onclick="kpClose()">✔</button>
+ </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 "use strict";
-// ===== 定義 =====
+// ================= 定義 =================
 const PRESET = {
   A:{steps:["冷食","アイス"], qty:["アイス数","冷食数"], exclude:[]},
   C:{steps:["積み下ろし+検品","アイス","バラ","冷食","前出し","チェック+片付け","週次チェック(任意)"], qty:["アイス数","冷食数","オリコン数","バラ数"], exclude:["週次チェック(任意)"]},
   S:{steps:["積み下ろし","検品+陳列"], qty:["ケース(アイス+冷食)数"], exclude:[]},
 };
-const COURSE = [["A-K","A"],["C-T","C"],["S-T","S"],["S-F","S"],["C-A","C"],["C-N","C"]];
-const typeOf = id => (COURSE.find(c=>c[0]===id)||[])[1];
+const CHECKLIST = ["全店の書類があるか","ハンディのデータ入れ・所持","欠品報告はないか"];
+const PHASE_LABEL = {title:"🕘 店舗作業タイマー", course:"コース変更", input:"②③ 数値入力", plan:"④⑤ 計画",
+  loadAM:"⑰ 積み込み（朝積み）", loadPM:"⑰ 積み込み（夜積み）", order:"⑥ 回る順番", checklist:"⑦ 出発前チェック",
+  stores:"⑧ 計測", returnTodo:"⑯ 帰社時Todo", handover:"⑱ 引継ぎ整理"};
+const DAY_PHASES = ["input","plan","loadAM","order","checklist","stores","returnTodo","loadPM","handover","done"];
 
-// ===== 状態 =====
+function defaultCourse(){
+  return {name:"現コース", load:"night", stores:[
+    {id:"A-K",type:"A"},{id:"C-T",type:"C"},{id:"S-T",type:"S"},{id:"S-F",type:"S"},{id:"C-A",type:"C"},{id:"C-N",type:"C"}]};
+}
+function typeName(t){return t==="A"?"A: 冷食/アイス":t==="C"?"C: フル":"S: 積下/検品+陳列";}
+
+// ================= 状態 =================
 let DB = loadDB();
-let curDate = todayStr();
-let curStore = null;
+let curDate = todayStr();       // 進行中の営業日（=今日）
+let ui = {mode:"title", planTab:"__all__", inputStore:null, freeCtx:null, prevMode:null, listDate:todayStr(), orderDraft:null};
 let ticker = null;
 
+// ================= DB =================
 function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-function loadDB(){try{const o=JSON.parse(localStorage.getItem("storeTimer")); return (o&&o.days)?o:{days:{}};}catch(e){return {days:{}};}}
-function saveDB(){localStorage.setItem("storeTimer",JSON.stringify(DB));}
-function day(){ if(!DB.days[curDate]) DB.days[curDate]={eos:null,stores:{}}; return DB.days[curDate]; }
-function store(id){
-  const d=day();
-  if(!d.stores[id]){
-    const t=typeOf(id);
-    d.stores[id]={type:t, qty:{}, steps:PRESET[t].steps.map(n=>({name:n,sec:0,done:false})), memo:"", cur:0, running:false, startAt:null};
+function nextDateStr(ds){const d=new Date(ds+"T00:00:00");d.setDate(d.getDate()+1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function freshDB(){ return {version:2, course:defaultCourse(), days:{}}; }
+function loadDB(){
+  let o=null; try{o=JSON.parse(localStorage.getItem("storeTimer"));}catch(e){}
+  if(!o||!o.days) return freshDB();
+  if(!o.version) o=migrateV1(o);
+  if(!o.course) o.course=defaultCourse();
+  return o;
+}
+function migrateV1(o){
+  const nd={};
+  for(const date of Object.keys(o.days||{})){
+    const d=o.days[date], stores={};
+    for(const id of Object.keys(d.stores||{})){
+      const s=d.stores[id];
+      stores[id]={type:s.type, qty:s.qty||{}, steps:(s.steps||[]).map(x=>({name:x.name,sec:x.sec||0,done:!!x.done})),
+        learn:"",question:"",handover:"", todos:[], cur:s.cur||0, running:false, startAt:null};
+    }
+    nd[date]={phase:"done", eos:d.eos??null, order:Object.keys(stores), storeIdx:0, checklist:[true,true,true],
+      stores, global:{handover:"",todos:[],returnTodos:[]}, loading:null, handoverDone:true};
   }
-  return d.stores[id];
+  return {version:2, course:defaultCourse(), days:nd};
+}
+function saveDB(){localStorage.setItem("storeTimer",JSON.stringify(DB));}
+function dayOf(date){
+  if(!DB.days[date]) DB.days[date]={phase:"title", eos:null, order:null, storeIdx:0, checklist:[false,false,false],
+    stores:{}, global:{handover:"",todos:[],returnTodos:[]}, loading:null, handoverDone:false};
+  const d=DB.days[date];
+  if(!d.global) d.global={handover:"",todos:[],returnTodos:[]};
+  if(!d.global.todos) d.global.todos=[];
+  if(!d.global.returnTodos) d.global.returnTodos=[];
+  if(d.storeIdx==null) d.storeIdx=0;
+  if(!d.checklist) d.checklist=[false,false,false];
+  return d;
+}
+function courseType(id){ const c=DB.course.stores.find(s=>s.id===id); return c?c.type:"C"; }
+function storeOf(date,id){
+  const d=dayOf(date);
+  if(!d.stores[id]){
+    const t=courseType(id);
+    d.stores[id]={type:t, qty:{}, steps:PRESET[t].steps.map(n=>({name:n,sec:0,done:false})),
+      learn:"",question:"",handover:"", todos:[], cur:0, running:false, startAt:null};
+  }
+  const s=d.stores[id];
+  ["learn","question","handover"].forEach(k=>{if(s[k]==null)s[k]="";});
+  if(!s.todos)s.todos=[];
+  return s;
+}
+function loadingOf(date){
+  const d=dayOf(date);
+  if(!d.loading) d.loading={sec:0,running:false,startAt:null,done:false,eosNext:null,learn:"",question:"",handover:""};
+  return d.loading;
+}
+function prevRecordedDate(ds){
+  return Object.keys(DB.days).filter(k=>k<ds).sort().reverse()
+    .find(k=>{const d=DB.days[k]; return d && (Object.keys(d.stores||{}).length>0 || d.loading || (d.global&&d.global.handover));});
 }
 
-// ===== タイマー計算 =====
+// ================= 時間計算 =================
 function elapsed(s){ return (s.running && s.startAt) ? Math.round((Date.now()-s.startAt)/1000) : 0; }
 function liveSec(s,i){ const st=s.steps[i]; if(!st)return 0; return st.sec + ((s.running&&s.cur===i)?elapsed(s):0); }
 function secOfName(s,name){ const i=s.steps.findIndex(x=>x.name===name); return i<0?0:liveSec(s,i); }
-function totalSec(s){ const ex=PRESET[s.type].exclude; let v=0; s.steps.forEach((st,i)=>{ if(!ex.includes(st.name)) v+=liveSec(s,i); }); return v; }
+function isExcluded(s,st){ return !!st.extra || PRESET[s.type].exclude.includes(st.name); }
+function totalSec(s){ let v=0; s.steps.forEach((st,i)=>{ if(!isExcluded(s,st)) v+=liveSec(s,i); }); return v; }
+function loadingSec(l){ return l.sec + ((l.running&&l.startAt)?Math.round((Date.now()-l.startAt)/1000):0); }
 function fmtClock(sec){ sec=Math.round(sec); const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; return h+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"); }
 function fmtMS(sec){ if(sec==null||!isFinite(sec))return "—"; sec=Math.round(sec); return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }
 function fmtTimer(sec){ sec=Math.round(sec); const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"); }
+function digitsToSec(v){ v=String(v||"").replace(/\D/g,""); if(!v)return 0; if(v.length<=2)return parseInt(v)||0; return (parseInt(v.slice(0,-2))||0)*60+(parseInt(v.slice(-2))||0); }
 
-// ===== per-unit =====
+// ================= per-unit =================
 function perUnit(s){
   const q=s.qty, out=[]; const t=s.type;
   const num = k => { const v=parseFloat(q[k]); return isFinite(v)&&v>0 ? v : 0; };
@@ -185,152 +257,704 @@ function caseCount(s){
   return num("アイス数")+num("冷食数");
 }
 
-// ===== 画面遷移 =====
-function show(id){ document.getElementById("home").classList.toggle("hide", id!=="home"); document.getElementById("store").classList.toggle("hide", id!=="store"); }
-function goHome(){ stopTicker(); curStore=null; show("home"); renderHome(); }
-function openStore(id){ curStore=id; store(id); show("store"); renderStore(); startTicker(); }
+// ================= キーパッド =================
+const KP={inp:null,onchange:null};
+function kpFocus(inp,onchange){
+  if(KP.inp) KP.inp.classList.remove("kpfocus");
+  KP.inp=inp; KP.onchange=onchange||null;
+  inp.classList.add("kpfocus");
+  document.getElementById("keypad").classList.remove("hide");
+  document.body.classList.add("kp-open");
+  inp.scrollIntoView({block:"center"});
+}
+function kpPress(k){
+  if(!KP.inp) return;
+  let v=String(KP.inp.value||"");
+  if(k==="BS") v=v.slice(0,-1); else if(v.length<5) v+=k;
+  KP.inp.value=v;
+  if(KP.onchange) KP.onchange(v);
+}
+function kpClose(){
+  if(KP.inp) KP.inp.classList.remove("kpfocus");
+  KP.inp=null; KP.onchange=null;
+  document.getElementById("keypad").classList.add("hide");
+  document.body.classList.remove("kp-open");
+}
+function mkKpField(value,onchange,width){
+  const inp=document.createElement("input");
+  inp.className="kpfield"; inp.readOnly=true; inp.value=value??""; inp.placeholder="—";
+  if(width) inp.style.width=width;
+  inp.onclick=()=>kpFocus(inp,onchange);
+  return inp;
+}
 
-// ===== HOME描画 =====
-function renderHome(){
-  document.getElementById("dateInput").value = curDate;
-  document.getElementById("eosToday").value = day().eos ?? "";
-  const list = document.getElementById("storeList");
-  list.innerHTML = "";
-  COURSE.forEach(([id])=>{
-    const d=day(); const s=d.stores[id];
-    let badge='<span class="badge">未計測</span>', sub="";
-    if(s){
-      const anyTime = s.steps.some(x=>x.sec>0);
-      const allDone = s.steps.filter(x=>!PRESET[s.type].exclude.includes(x.name)).every(x=>x.done);
-      if(allDone && anyTime){ badge='<span class="badge done">完了 '+fmtClock(totalSec(s))+'</span>'; }
-      else if(anyTime || s.running){ badge='<span class="badge active">計測中 '+fmtClock(totalSec(s))+'</span>'; }
-    }
-    const div=document.createElement("div");
-    div.className="store-item";
-    div.onclick=()=>openStore(id);
-    div.innerHTML='<div><div class="nm">'+id+'店</div><div class="mut">'+typeName(typeOf(id))+'</div></div>'+badge;
-    list.appendChild(div);
+// ================= シート（ドロワー） =================
+function openSheet(title,build){
+  document.getElementById("sheetTitle").textContent=title;
+  const b=document.getElementById("sheetBody"); b.innerHTML="";
+  build(b);
+  document.getElementById("sheetBg").classList.remove("hide");
+  document.getElementById("sheetEl").classList.remove("hide");
+}
+function closeSheet(){
+  document.getElementById("sheetBg").classList.add("hide");
+  document.getElementById("sheetEl").classList.add("hide");
+  kpClose();
+  render(); // バッジ等の更新
+}
+function memoSheet(title,obj,key){
+  openSheet(title,b=>{
+    const ta=document.createElement("textarea"); ta.rows=5; ta.value=obj[key]||"";
+    ta.placeholder="ここに書く"; ta.oninput=()=>{obj[key]=ta.value; saveDB();};
+    b.appendChild(ta);
   });
 }
-function typeName(t){return t==="A"?"A: 冷食/アイス":t==="C"?"C: フル":"S: 積下/検品+陳列";}
 
-// ===== STORE描画 =====
-function renderStore(){
-  const s=store(curStore);
-  document.getElementById("storeName").textContent=curStore+"店";
-  // 数量
-  const qb=document.getElementById("qtyBox");
-  qb.innerHTML="";
-  PRESET[s.type].qty.forEach(k=>{
-    const row=document.createElement("div"); row.className="qrow";
-    row.innerHTML='<span>'+k+'</span>';
-    const inp=document.createElement("input"); inp.type="number"; inp.value=s.qty[k]??""; inp.placeholder="—";
-    inp.oninput=()=>{ s.qty[k]=inp.value; saveDB(); renderPU(); };
-    row.appendChild(inp); qb.appendChild(row);
+// ================= Todo エディタ =================
+function todoEditor(box,arr){
+  const list=document.createElement("div");
+  const redraw=()=>{
+    list.innerHTML="";
+    arr.forEach((t,i)=>{
+      const r=document.createElement("div"); r.className="todo-row";
+      const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!t.done;
+      cb.onchange=()=>{t.done=cb.checked; saveDB(); redraw();};
+      const sp=document.createElement("span"); sp.textContent=t.text; if(t.done)sp.className="done-txt";
+      const del=document.createElement("button"); del.className="del"; del.textContent="−";
+      del.onclick=()=>{arr.splice(i,1); saveDB(); redraw();};
+      r.appendChild(cb); r.appendChild(sp); r.appendChild(del); list.appendChild(r);
+    });
+    if(arr.length===0){ list.innerHTML='<div class="mut" style="padding:6px 0">（なし）</div>'; }
+  };
+  redraw();
+  const addRow=document.createElement("div"); addRow.className="row"; addRow.style.marginTop="8px";
+  const inp=document.createElement("input"); inp.className="wide"; inp.placeholder="Todo を追加"; inp.style.flex="1";
+  const btn=document.createElement("button"); btn.className="btn-accent"; btn.textContent="＋";
+  const add=()=>{ const v=inp.value.trim(); if(!v)return; arr.push({text:v,done:false}); inp.value=""; saveDB(); redraw(); };
+  btn.onclick=add; inp.onkeydown=e=>{if(e.key==="Enter")add();};
+  addRow.appendChild(inp); addRow.appendChild(btn);
+  box.appendChild(list); box.appendChild(addRow);
+}
+
+// ================= ルーター =================
+function go(phase){
+  if(DAY_PHASES.includes(phase)){ const d=dayOf(curDate); d.phase=phase; saveDB(); }
+  ui.mode=phase;
+  render();
+}
+function render(){
+  const map={title:"scrTitle",course:"scrCourse",input:"scrInput",plan:"scrPlan",loadAM:"scrLoad",loadPM:"scrLoad",
+    order:"scrOrder",checklist:"scrCheck",stores:"scrStore",returnTodo:"scrReturn",handover:"scrHandover"};
+  document.querySelectorAll(".screen").forEach(el=>el.classList.add("hide"));
+  const id=map[ui.mode]||"scrTitle";
+  document.getElementById(id).classList.remove("hide");
+  document.getElementById("hdrTitle").textContent=PHASE_LABEL[ui.mode]||PHASE_LABEL.title;
+  document.getElementById("btnHome").classList.toggle("hide", ui.mode==="title");
+  const r={title:renderTitle,course:renderCourse,input:renderInput,plan:renderPlan,loadAM:()=>renderLoad("AM"),
+    loadPM:()=>renderLoad("PM"),order:renderOrder,checklist:renderCheck,stores:renderStore,
+    returnTodo:renderReturn,handover:renderHandover}[ui.mode];
+  if(r) r();
+}
+function confirmHome(){
+  if(ui.mode==="title") return;
+  if(confirm("タイトルへ戻る？（進行状態は保存済み・続きから再開できる）")){ ui.freeCtx=null; ui.mode="title"; render(); }
+}
+
+// ================= ① タイトル =================
+function renderTitle(){
+  const el=document.getElementById("scrTitle");
+  const d=DB.days[curDate];
+  const phase=d?d.phase:"title";
+  let mainBtn;
+  if(!d||phase==="title") mainBtn='<button class="btn-ok big" onclick="startDay()">▶ 今日を始める</button>';
+  else if(phase==="done") mainBtn='<div class="card" style="text-align:center">✔ 今日は完了。<span class="mut">個別の見直しは 📋一覧 から</span></div><button class="btn-ghost wfull" onclick="startDay()">もう一度フローを開く</button>';
+  else mainBtn='<button class="btn-ok big" onclick="resumeDay()">▶ 続きから（'+(PHASE_LABEL[phase]||phase)+'）</button><button class="btn-ghost wfull" style="margin-top:8px" onclick="startDay()">最初（②数値入力）からやり直す</button>';
+  el.innerHTML=
+   '<h1>🕘 店舗作業タイマー <span class="mut" style="font-size:12px">v0.2</span></h1>'+
+   '<div class="card"><div class="row sb"><span class="mut">今日</span><b>'+curDate+'</b></div>'+
+   '<div class="row sb" style="margin-top:6px"><span class="mut">コース</span><b>'+DB.course.name+'（'+(DB.course.load==="night"?"夜積み":"朝積み")+'・'+DB.course.stores.length+'店）</b></div></div>'+
+   mainBtn+
+   '<div class="card"><div class="grid2">'+
+   '<button class="btn-ghost" onclick="go(\'course\')">🛠 コース変更</button>'+
+   '<button class="btn-ghost" onclick="openList()">📋 一覧モード</button>'+
+   '<button class="btn-ghost" onclick="exportJSON()">⬇ エクスポート</button>'+
+   '<button class="btn-ghost" onclick="document.getElementById(\'importFile\').click()">⬆ インポート</button>'+
+   '</div>'+
+   '<input type="file" id="importFile" accept=".json,application/json" class="hide" onchange="importJSON(event)">'+
+   '<button class="btn-ghost wfull" style="margin-top:8px;color:var(--danger)" onclick="resetDay()">今日のデータをリセット</button></div>'+
+   '<div class="mut" style="text-align:center">計測=店到着〜出発（車移動は測らない）</div>';
+}
+function startDay(){ dayOf(curDate); go("input"); }
+function resumeDay(){ const d=dayOf(curDate); go(d.phase); }
+function resetDay(){ if(confirm(curDate+" のデータを全部消す？")){ delete DB.days[curDate]; saveDB(); render(); } }
+
+// ================= コース変更（ミニビルダー） =================
+function renderCourse(){
+  const el=document.getElementById("scrCourse");
+  el.innerHTML="";
+  const card=document.createElement("div"); card.className="card";
+  card.innerHTML='<b>積み込みタイプ</b>';
+  const lr=document.createElement("div"); lr.className="row"; lr.style.marginTop="8px";
+  [["night","🌙 夜積み（前日に翌日分）"],["morning","🌅 朝積み（当日朝）"]].forEach(([v,lab])=>{
+    const b=document.createElement("button");
+    b.className=DB.course.load===v?"btn-accent":"btn-ghost"; b.textContent=lab; b.style.flex="1";
+    b.onclick=()=>{DB.course.load=v; saveDB(); renderCourse();};
+    lr.appendChild(b);
   });
-  if(s.type!=="S"){
-    const cc=document.createElement("div"); cc.className="qrow";
-    cc.innerHTML='<span class="mut">ケース数 (=アイス+冷食)</span><b id="caseCount" style="color:var(--accent)">—</b>';
-    qb.appendChild(cc);
+  card.appendChild(lr); el.appendChild(card);
+
+  const card2=document.createElement("div"); card2.className="card";
+  card2.innerHTML='<b>店舗（恒久の並び順）</b><div class="mut">当日だけの変更は⑥でやる</div>';
+  DB.course.stores.forEach((st,i)=>{
+    const r=document.createElement("div"); r.className="ord";
+    r.innerHTML='<div class="nm">'+st.id+'店 <span class="mut">'+typeName(st.type)+'</span></div>';
+    const up=document.createElement("button"); up.className="btn-ghost"; up.textContent="↑"; up.disabled=(i===0);
+    up.onclick=()=>{[DB.course.stores[i-1],DB.course.stores[i]]=[DB.course.stores[i],DB.course.stores[i-1]]; saveDB(); renderCourse();};
+    const dn=document.createElement("button"); dn.className="btn-ghost"; dn.textContent="↓"; dn.disabled=(i===DB.course.stores.length-1);
+    dn.onclick=()=>{[DB.course.stores[i+1],DB.course.stores[i]]=[DB.course.stores[i],DB.course.stores[i+1]]; saveDB(); renderCourse();};
+    const del=document.createElement("button"); del.className="btn-ghost"; del.textContent="✕"; del.style.color="var(--danger)";
+    del.onclick=()=>{ if(confirm(st.id+"店 をコースから削除？（過去の計測データは残る）")){ DB.course.stores.splice(i,1); saveDB(); renderCourse(); } };
+    r.appendChild(up); r.appendChild(dn); r.appendChild(del);
+    card2.appendChild(r);
+  });
+  const addR=document.createElement("div"); addR.className="row"; addR.style.marginTop="10px";
+  const nameI=document.createElement("input"); nameI.placeholder="店名 (例 C-X)"; nameI.style.flex="1"; nameI.style.textAlign="left";
+  const typeS=document.createElement("select");
+  ["A","C","S"].forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=t;typeS.appendChild(o);});
+  typeS.value="C"; typeS.style.width="70px";
+  const addB=document.createElement("button"); addB.className="btn-accent"; addB.textContent="＋追加";
+  addB.onclick=()=>{
+    const nm=nameI.value.trim(); if(!nm){toast("店名を入れて");return;}
+    if(DB.course.stores.some(s=>s.id===nm)){toast("同名の店がある");return;}
+    DB.course.stores.push({id:nm,type:typeS.value}); nameI.value=""; saveDB(); renderCourse();
+  };
+  addR.appendChild(nameI); addR.appendChild(typeS); addR.appendChild(addB);
+  card2.appendChild(addR); el.appendChild(card2);
+
+  const back=document.createElement("button"); back.className="btn-ok big"; back.textContent="保存してタイトルへ";
+  back.onclick=()=>{ui.mode="title";render();};
+  el.appendChild(back);
+}
+
+// ================= ②③ 数値入力 =================
+function renderInput(){
+  const el=document.getElementById("scrInput");
+  const d=dayOf(curDate);
+  el.innerHTML="";
+  const eosCard=document.createElement("div"); eosCard.className="card";
+  const er=document.createElement("div"); er.className="row sb";
+  er.innerHTML='<span><b>今日のEOS</b><div class="mut">全店の商品種類数。~200少なめ/300多め</div></span>';
+  const eosI=mkKpField(d.eos??"",v=>{d.eos=v===""?null:Number(v); saveDB();});
+  er.appendChild(eosI); eosCard.appendChild(er); el.appendChild(eosCard);
+
+  const chipCard=document.createElement("div"); chipCard.className="card";
+  chipCard.innerHTML='<b>店舗を選んで数量入力</b><div class="mut">オリコン数は現場（⑧）で後入力</div>';
+  const chips=document.createElement("div"); chips.className="chips";
+  if(!ui.inputStore && DB.course.stores.length) ui.inputStore=DB.course.stores[0].id;
+  DB.course.stores.forEach(cs=>{
+    const c=document.createElement("div"); c.className="chip"+(ui.inputStore===cs.id?" on":"");
+    c.textContent=cs.id;
+    c.onclick=()=>{ui.inputStore=cs.id; renderInput();};
+    chips.appendChild(c);
+  });
+  chipCard.appendChild(chips);
+  const form=document.createElement("div");
+  if(ui.inputStore) buildQtyForm(form, curDate, ui.inputStore, false);
+  chipCard.appendChild(form);
+  el.appendChild(chipCard);
+
+  const nx=document.createElement("button"); nx.className="btn-ok big"; nx.textContent="④ 計画へ →";
+  nx.onclick=()=>{kpClose(); go("plan");};
+  el.appendChild(nx);
+}
+// 数量フォーム（②用。withOricon=true で⑧のオリコン後入力にも使う）
+function buildQtyForm(box, date, id, withOricon){
+  const s=storeOf(date,id);
+  box.innerHTML="";
+  const mkRow=(label,inp)=>{const r=document.createElement("div");r.className="qrow";
+    const sp=document.createElement("span");sp.innerHTML=label;r.appendChild(sp);r.appendChild(inp);box.appendChild(r);return r;};
+  if(s.type==="C" && !withOricon){
+    let frozenInp;
+    const recompute=()=>{
+      const ice=parseFloat(s.qty["アイス数"]), cs=parseFloat(s.qty["_caseInput"]);
+      if(isFinite(ice)&&isFinite(cs)){ s.qty["冷食数"]=String(Math.max(cs-ice,0)); frozenInp.value=s.qty["冷食数"]; saveDB(); }
+    };
+    mkRow("アイス数", mkKpField(s.qty["アイス数"]??"",v=>{s.qty["アイス数"]=v; saveDB(); recompute();}));
+    mkRow("合計ケース数 <span class='mut'>(アイス+冷食)</span>", mkKpField(s.qty["_caseInput"]??"",v=>{s.qty["_caseInput"]=v; saveDB(); recompute();}));
+    frozenInp=mkKpField(s.qty["冷食数"]??"",v=>{s.qty["冷食数"]=v; saveDB();});
+    mkRow("冷食数 <span class='mut'>(自動=ケース−アイス・手修正可)</span>", frozenInp);
+    mkRow("バラ数", mkKpField(s.qty["バラ数"]??"",v=>{s.qty["バラ数"]=v; saveDB();}));
+  } else if(s.type==="C" && withOricon){
+    mkRow("オリコン数 <span class='mut'>(後入力)</span>", mkKpField(s.qty["オリコン数"]??"",v=>{s.qty["オリコン数"]=v; saveDB(); renderPUInto(document.getElementById("puList"), s);}));
+  } else {
+    PRESET[s.type].qty.forEach(k=>{
+      mkRow(k, mkKpField(s.qty[k]??"",v=>{s.qty[k]=v; saveDB();}));
+    });
   }
-  // ステップ
-  const sl=document.getElementById("stepList"); sl.innerHTML="";
+}
+
+// ================= ④⑤ 計画 =================
+function renderPlan(){
+  const el=document.getElementById("scrPlan");
+  const d=dayOf(curDate);
+  const prev=prevRecordedDate(curDate);
+  const pd=prev?DB.days[prev]:null;
+  el.innerHTML="";
+  const info=document.createElement("div"); info.className="mut";
+  info.textContent=prev?("前日引継ぎ: "+prev+" から"):"前日の記録なし";
+  el.appendChild(info);
+
+  const chips=document.createElement("div"); chips.className="chips";
+  const tabs=[["__all__","全体"]].concat(DB.course.stores.map(cs=>[cs.id,cs.id]));
+  tabs.forEach(([key,label])=>{
+    const c=document.createElement("div"); c.className="chip"+(ui.planTab===key?" on":"");
+    c.textContent=label;
+    let hasH=false;
+    if(pd){
+      if(key==="__all__") hasH=!!(pd.global&&pd.global.handover)||!!(pd.loading&&pd.loading.handover);
+      else hasH=!!(pd.stores[key]&&pd.stores[key].handover);
+    }
+    if(hasH){const dot=document.createElement("span");dot.className="dot";c.appendChild(dot);}
+    c.onclick=()=>{ui.planTab=key; renderPlan();};
+    chips.appendChild(c);
+  });
+  el.appendChild(chips);
+
+  const hcard=document.createElement("div"); hcard.className="card";
+  hcard.innerHTML='<b>📝 前日の引継ぎ</b>';
+  let htxt="";
+  if(pd){
+    if(ui.planTab==="__all__"){
+      if(pd.global&&pd.global.handover) htxt+=pd.global.handover;
+      if(pd.loading&&pd.loading.handover) htxt+=(htxt?"\n":"")+"[積み込み] "+pd.loading.handover;
+    } else if(pd.stores[ui.planTab]&&pd.stores[ui.planTab].handover) htxt=pd.stores[ui.planTab].handover;
+  }
+  const hb=document.createElement("div");
+  if(htxt){ hb.className="hbox"; hb.textContent=htxt; }
+  else { hb.className="mut"; hb.style.padding="6px 0"; hb.textContent="（引継ぎなし）"; }
+  hcard.appendChild(hb); el.appendChild(hcard);
+
+  const tcard=document.createElement("div"); tcard.className="card";
+  tcard.innerHTML='<b>✅ 今日のTodo（'+(ui.planTab==="__all__"?"全体":ui.planTab+"店")+'）</b><div class="mut">時間は測らないチェックリスト。計測する作業は⑧の「その他」で</div>';
+  const arr = ui.planTab==="__all__" ? d.global.todos : storeOf(curDate,ui.planTab).todos;
+  todoEditor(tcard,arr);
+  el.appendChild(tcard);
+
+  const nx=document.createElement("button"); nx.className="btn-ok big";
+  nx.textContent = DB.course.load==="morning" ? "⑰ 積み込みへ →" : "⑥ 順番確認へ →";
+  nx.onclick=()=>go(DB.course.load==="morning"?"loadAM":"order");
+  el.appendChild(nx);
+}
+
+// ================= ⑰ 積み込み =================
+function renderLoad(mode){
+  const el=document.getElementById("scrLoad");
+  const d=dayOf(curDate);
+  const l=loadingOf(curDate);
+  el.innerHTML="";
+  const card=document.createElement("div"); card.className="card";
+  card.innerHTML='<div class="timer" id="loadTimer">'+fmtTimer(loadingSec(l))+'</div>'+
+    '<div class="mut" style="text-align:center">積み込み'+(l.running?" ⏱":"")+'</div>';
+  const gr=document.createElement("div"); gr.className="grid2"; gr.style.marginTop="12px";
+  const b1=document.createElement("button"); b1.className=(l.running?"btn-warn":"btn-ok")+" big";
+  b1.textContent=l.running?"⏸ 一時停止":(l.sec>0?"▶ 再開":"▶ 開始");
+  b1.onclick=()=>{ if(l.running){l.sec+=Math.round((Date.now()-l.startAt)/1000);l.running=false;l.startAt=null;}
+    else {l.running=true;l.startAt=Date.now();} saveDB(); renderLoad(mode); };
+  const b2=document.createElement("button"); b2.className="btn-ghost big"; b2.textContent="完了 ✔";
+  b2.onclick=()=>{ if(l.running){l.sec+=Math.round((Date.now()-l.startAt)/1000);l.running=false;l.startAt=null;} l.done=true; saveDB(); renderLoad(mode); };
+  gr.appendChild(b1); gr.appendChild(b2); card.appendChild(gr);
+  el.appendChild(card);
+
+  const ecard=document.createElement("div"); ecard.className="card";
+  if(mode==="PM"){
+    const r=document.createElement("div"); r.className="qrow";
+    r.innerHTML='<span><b>翌日のEOS</b><div class="mut">翌日の②へ自動転記される</div></span>';
+    const inp=mkKpField(l.eosNext??"",v=>{ l.eosNext=v===""?null:Number(v);
+      dayOf(nextDateStr(curDate)).eos=l.eosNext; saveDB(); renderLoadStats(mode,l); });
+    r.appendChild(inp); ecard.appendChild(r);
+  } else {
+    ecard.innerHTML='<div class="row sb"><span class="mut">当日EOS（②で入力済み）</span><b>'+(d.eos??"—")+'</b></div>';
+  }
+  const stats=document.createElement("div"); stats.id="loadStats";
+  ecard.appendChild(stats); el.appendChild(ecard);
+  renderLoadStats(mode,l);
+
+  const memoCard=document.createElement("div"); memoCard.className="card";
+  memoCard.innerHTML='<b>メモ</b>';
+  const mr=document.createElement("div"); mr.className="row"; mr.style.marginTop="8px";
+  [["📚 学び","learn"],["💭 疑問","question"],["📝 引継ぎ","handover"]].forEach(([lab,key])=>{
+    const b=document.createElement("button"); b.className="btn-ghost"; b.style.flex="1"; b.style.fontSize="13px";
+    b.textContent=lab+(l[key]?" ●":"");
+    b.onclick=()=>memoSheet("⑰ 積み込み "+lab,l,key);
+    mr.appendChild(b);
+  });
+  memoCard.appendChild(mr); el.appendChild(memoCard);
+
+  const nx=document.createElement("button"); nx.className="btn-ok big";
+  nx.textContent = mode==="AM" ? "⑥ 順番確認へ →" : "⑱ 引継ぎ整理へ →";
+  nx.onclick=()=>go(mode==="AM"?"order":"handover");
+  el.appendChild(nx);
+}
+function renderLoadStats(mode,l){
+  const d=dayOf(curDate);
+  const eos = mode==="AM" ? d.eos : l.eosNext;
+  const st=document.getElementById("loadStats"); if(!st)return;
+  const sec=loadingSec(l);
+  st.innerHTML='<div class="pu"><span>積み込み時間</span><span class="v">'+fmtClock(sec)+'</span></div>'+
+    ((eos&&sec>0)?'<div class="pu"><span>EOSあたり</span><span class="v">'+fmtMS(sec/eos)+'</span></div>':'');
+}
+
+// ================= ⑥ 順番確認 =================
+function renderOrder(){
+  const el=document.getElementById("scrOrder");
+  const d=dayOf(curDate);
+  if(!ui.orderDraft){
+    const base = d.order && d.order.length ? d.order.concat(DB.course.stores.map(s=>s.id).filter(id=>!d.order.includes(id)))
+               : DB.course.stores.map(s=>s.id);
+    const skipped = d.order ? DB.course.stores.map(s=>s.id).filter(id=>!d.order.includes(id)) : [];
+    ui.orderDraft = base.map(id=>({id, go:!skipped.includes(id)}));
+  }
+  el.innerHTML='<div class="mut">今日回る順番に変更ある？ なければそのまま進んでOK。行かない店は「休」に。</div>';
+  ui.orderDraft.forEach((o,i)=>{
+    const r=document.createElement("div"); r.className="ord"+(o.go?"":" skip");
+    r.innerHTML='<div class="nm">'+(i+1)+'. '+o.id+'店</div>';
+    const up=document.createElement("button"); up.className="btn-ghost"; up.textContent="↑"; up.disabled=(i===0);
+    up.onclick=()=>{[ui.orderDraft[i-1],ui.orderDraft[i]]=[ui.orderDraft[i],ui.orderDraft[i-1]]; renderOrder();};
+    const dn=document.createElement("button"); dn.className="btn-ghost"; dn.textContent="↓"; dn.disabled=(i===ui.orderDraft.length-1);
+    dn.onclick=()=>{[ui.orderDraft[i+1],ui.orderDraft[i]]=[ui.orderDraft[i],ui.orderDraft[i+1]]; renderOrder();};
+    const sk=document.createElement("button"); sk.className=o.go?"btn-ghost":"btn-warn"; sk.textContent=o.go?"休":"行く";
+    sk.onclick=()=>{o.go=!o.go; renderOrder();};
+    r.appendChild(up); r.appendChild(dn); r.appendChild(sk);
+    el.appendChild(r);
+  });
+  const nx=document.createElement("button"); nx.className="btn-ok big"; nx.style.marginTop="10px";
+  nx.textContent="この順番で ⑦ 出発前チェックへ →";
+  nx.onclick=()=>{
+    const order=ui.orderDraft.filter(o=>o.go).map(o=>o.id);
+    if(order.length===0){toast("全店休みなら計測なし。タイトルへ");return;}
+    d.order=order; d.storeIdx=0; ui.orderDraft=null; saveDB(); go("checklist");
+  };
+  el.appendChild(nx);
+}
+
+// ================= ⑦ 出発前チェック =================
+function renderCheck(){
+  const el=document.getElementById("scrCheck");
+  const d=dayOf(curDate);
+  el.innerHTML='<div class="mut">全部チェックで出発。</div>';
+  CHECKLIST.forEach((label,i)=>{
+    const r=document.createElement("label"); r.className="chk";
+    const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!d.checklist[i];
+    cb.onchange=()=>{d.checklist[i]=cb.checked; saveDB(); renderCheck();};
+    r.appendChild(cb); r.appendChild(document.createTextNode((i+1)+". "+label));
+    el.appendChild(r);
+  });
+  const ok=d.checklist.every(Boolean);
+  const nx=document.createElement("button"); nx.className="btn-ok big"; nx.disabled=!ok;
+  nx.textContent="🚚 出発 → "+(d.order&&d.order[0]?d.order[0]+"店":"");
+  nx.onclick=()=>go("stores");
+  el.appendChild(nx);
+}
+
+// ================= ⑧ 店舗カウント =================
+function activeCtx(){
+  if(ui.freeCtx) return ui.freeCtx;
+  const d=dayOf(curDate);
+  const id=(d.order||[])[d.storeIdx];
+  return id?{date:curDate,id,free:false}:null;
+}
+function renderStore(){
+  const el=document.getElementById("scrStore");
+  const ctx=activeCtx();
+  if(!ctx){ el.innerHTML='<div class="card">今日の店がない。⑥へ戻る。</div>'; return; }
+  const d=dayOf(ctx.date);
+  const s=storeOf(ctx.date,ctx.id);
+  el.innerHTML="";
+
+  // ヘッダ行
+  const top=document.createElement("div"); top.className="row sb";
+  const prog = ctx.free ? '<span class="badge">'+ctx.date+'</span>'
+    : '<span class="badge">'+(d.storeIdx+1)+' / '+d.order.length+'店</span>';
+  top.innerHTML='<h1 style="margin:0">'+ctx.id+'店 <span class="mut" style="font-size:12px">'+typeName(s.type)+'</span></h1>'+prog;
+  el.appendChild(top);
+
+  // タイマー
+  const tcard=document.createElement("div"); tcard.className="card";
+  tcard.innerHTML='<div class="timer" id="timerDisp">'+fmtTimer(s.steps[s.cur]?liveSec(s,s.cur):0)+'</div>'+
+    '<div class="mut" style="text-align:center" id="curStepName">'+(s.steps[s.cur]?(s.steps[s.cur].name+(s.running?" ⏱":"")):"完了")+'</div>';
+  const gr=document.createElement("div"); gr.className="grid2"; gr.style.marginTop="12px";
+  const bn=document.createElement("button"); bn.className="btn-ok big";
+  bn.textContent = s.running ? "次へ ▶" : (s.steps.some(x=>x.sec>0||x.done)?"▶ 再開":"▶ 開始");
+  bn.onclick=()=>nextStart(ctx);
+  const bp=document.createElement("button"); bp.className="btn-warn big"; bp.textContent="⏸ 一時停止";
+  if(!s.running) bp.classList.add("hide");
+  bp.onclick=()=>pauseStore(ctx);
+  gr.appendChild(bn); gr.appendChild(bp); tcard.appendChild(gr);
+  el.appendChild(tcard);
+
+  // ステップ一覧（タップで切り替え・✎で手修正）
+  const scard=document.createElement("div"); scard.className="card";
+  scard.innerHTML='<b>ステップ</b> <span class="mut">タップ=そのステップへ切替スタート/再開</span>';
   s.steps.forEach((st,i)=>{
     const div=document.createElement("div");
     div.className="step"+(i===s.cur?" cur":"")+(st.done?" done":"");
-    div.onclick=()=>editStep(i);
-    const ex=PRESET[s.type].exclude.includes(st.name)?' <span class="mut">(合計外)</span>':'';
-    div.innerHTML='<div class="nm">'+(st.done?"✓ ":"")+st.name+ex+'</div><div class="tm" id="tm'+i+'">'+fmtClock(liveSec(s,i)).replace(/^0:/,"")+'</div>';
-    sl.appendChild(div);
+    const ex=isExcluded(s,st)?' <span class="mut">(合計外)</span>':'';
+    div.innerHTML='<div class="nm">'+(st.done?"✓ ":"")+st.name+ex+'</div>'+
+      '<div class="tm" id="tm'+i+'">'+fmtClock(liveSec(s,i)).replace(/^0:/,"")+'</div>';
+    const eb=document.createElement("button"); eb.className="edit"; eb.textContent="✎";
+    eb.onclick=(e)=>{e.stopPropagation(); editStepSheet(ctx,i);};
+    div.appendChild(eb);
+    div.onclick=()=>switchStep(ctx,i);
+    scard.appendChild(div);
   });
-  document.getElementById("memo").value=s.memo||"";
-  const tn=document.getElementById("totalNote");
-  tn.textContent = PRESET[s.type].exclude.length? " （週次は除外）":"";
-  updateButtons();
-  renderPU();
-  updateLive();
-}
-function renderPU(){
-  const s=store(curStore);
-  const pl=document.getElementById("puList"); pl.innerHTML="";
-  const pu=perUnit(s);
-  if(pu.length===0){ pl.innerHTML='<div class="mut">数量を入れると ○○あたり が出ます</div>'; }
-  pu.forEach(([k,v])=>{ const d=document.createElement("div"); d.className="pu"; d.innerHTML='<span>'+k+'</span><span class="v">'+v+'</span>'; pl.appendChild(d); });
-  const cc=document.getElementById("caseCount"); if(cc) cc.textContent = caseCount(s)||"—";
-  document.getElementById("puHint").textContent = s.type==="C"
-    ? "ケース=(アイス+冷食)/ケース数 ／ アイス・冷食=各時間/各数 ／ バラ=バラ時間/バラ数 ／ オリコン=バラ時間/オリコン数"
-    : s.type==="A" ? "ケース=(アイス+冷食)/ケース数 ／ アイス・冷食=各時間/各数"
-    : "ケース=合計時間/ケース数";
-}
-function updateButtons(){
-  const s=store(curStore);
-  const bn=document.getElementById("btnNext"), bp=document.getElementById("btnPause");
-  if(s.running){ bn.textContent="次へ ▶"; bp.classList.remove("hide"); }
-  else { bn.textContent = s.steps.some(x=>x.sec>0||x.done) ? "▶ 再開" : "▶ 開始"; bp.classList.add("hide"); }
-}
-function updateLive(){
-  const s=store(curStore); if(!s)return;
-  const st=s.steps[s.cur];
-  document.getElementById("timerDisp").textContent = fmtTimer(st?liveSec(s,s.cur):0);
-  document.getElementById("curStepName").textContent = st? (st.name+(s.running?" ⏱":"")) : "完了";
-  const tm=document.getElementById("tm"+s.cur); if(tm&&st) tm.textContent=fmtClock(liveSec(s,s.cur)).replace(/^0:/,"");
-  document.getElementById("stepTotal").textContent=fmtClock(totalSec(s));
-  document.getElementById("storeTotalBadge").textContent=fmtClock(totalSec(s));
-  if(s.running) renderPU();
-}
-function startTicker(){ stopTicker(); ticker=setInterval(updateLive,500); }
-function stopTicker(){ if(ticker){clearInterval(ticker);ticker=null;} }
+  const addB=document.createElement("button"); addB.className="btn-ghost wfull"; addB.style.marginTop="6px";
+  addB.textContent="＋ その他ステップ追加（合計外・自由記入）";
+  addB.onclick=()=>addExtraStep(ctx);
+  scard.appendChild(addB);
+  const tot=document.createElement("div"); tot.className="step"; tot.style.cssText="background:none;border-top:1px solid #30363d;border-radius:0;cursor:default";
+  tot.innerHTML='<div class="nm"><b>合計</b><span class="mut">（合計外を除く）</span></div><div class="tm" id="stepTotal">'+fmtClock(totalSec(s))+'</div>';
+  scard.appendChild(tot);
+  el.appendChild(scard);
 
-// ===== 操作 =====
-function nextStart(){
-  const s=store(curStore);
-  if(!s.running){ s.running=true; s.startAt=Date.now(); }
+  // オリコン後入力（C店のみ）
+  if(s.type==="C"){
+    const ocard=document.createElement("div"); ocard.className="card";
+    buildQtyForm(ocard, ctx.date, ctx.id, true);
+    el.appendChild(ocard);
+  }
+
+  // per-unit
+  const pcard=document.createElement("div"); pcard.className="card";
+  pcard.innerHTML='<b>○○あたり（分:秒）</b><div id="puList" style="margin-top:6px"></div>';
+  el.appendChild(pcard);
+  renderPUInto(pcard.querySelector("#puList"), s);
+
+  // リセット
+  const rs=document.createElement("button"); rs.className="btn-ghost wfull";
+  rs.style.cssText="color:var(--danger);border:1px solid var(--danger)";
+  rs.textContent="🗑 この店をリセット";
+  rs.onclick=()=>{ if(!confirm(ctx.id+"店 の計測・数量・メモを全部消す？"))return;
+    delete dayOf(ctx.date).stores[ctx.id]; storeOf(ctx.date,ctx.id); saveDB(); renderStore(); toast(ctx.id+"店 をリセット"); };
+  el.appendChild(rs);
+
+  // ⑮ 次店舗へ / 一覧へ戻る
+  const nx=document.createElement("button"); nx.className="btn-accent big"; nx.style.marginTop="10px";
+  if(ctx.free){ nx.textContent="← 一覧へ戻る"; nx.onclick=()=>{ui.freeCtx=null; ui.mode=ui.prevMode||"title"; render(); openList();}; }
   else {
+    const last = d.storeIdx>=d.order.length-1;
+    nx.textContent = last ? "⑯ 帰社へ →" : "⑮ 次店舗へ → "+d.order[d.storeIdx+1]+"店";
+    nx.onclick=()=>finishStore(ctx,last);
+  }
+  el.appendChild(nx);
+
+  // ドロワーバー
+  renderDrawerBar(ctx,s);
+}
+function renderDrawerBar(ctx,s){
+  let bar=document.getElementById("drawerBar");
+  if(!bar){ bar=document.createElement("div"); bar.id="drawerBar"; bar.className="drawerbar"; document.body.appendChild(bar); }
+  bar.classList.remove("hide");
+  bar.innerHTML="";
+  const d=dayOf(ctx.date);
+  const items=[
+    ["📚","学び",()=>memoSheet("⑨ 学びメモ（"+ctx.id+"店）",s,"learn"),!!s.learn],
+    ["💭","疑問",()=>memoSheet("⑩ 疑問メモ（"+ctx.id+"店）",s,"question"),!!s.question],
+    ["📝","店引継",()=>memoSheet("⑪ 引継ぎ（"+ctx.id+"店）",s,"handover"),!!s.handover],
+    ["🌐","全体引継",()=>globalHandoverSheet(ctx),!!d.global.handover],
+    ["✅","店Todo",()=>openSheet("⑬ Todo（"+ctx.id+"店）",b=>todoEditor(b,s.todos)),s.todos.some(t=>!t.done)],
+  ];
+  items.forEach(([ico,lab,fn,has])=>{
+    const b=document.createElement("button");
+    b.innerHTML=ico+"<br>"+lab+(has?'<span class="dot"></span>':"");
+    b.onclick=fn; bar.appendChild(b);
+  });
+}
+function hideDrawerBar(){ const bar=document.getElementById("drawerBar"); if(bar)bar.classList.add("hide"); }
+function globalHandoverSheet(ctx){
+  const d=dayOf(ctx.date);
+  openSheet("⑫ 全体引継ぎ",b=>{
+    const ta=document.createElement("textarea"); ta.rows=5; ta.value=d.global.handover||"";
+    ta.oninput=()=>{d.global.handover=ta.value; saveDB();};
+    b.appendChild(ta);
+    const cp=document.createElement("button"); cp.className="btn-ghost wfull"; cp.style.marginTop="8px";
+    cp.textContent="⑯ 帰社Todoへコピー";
+    cp.onclick=()=>{ const v=(d.global.handover||"").trim(); if(!v){toast("空です");return;}
+      d.global.returnTodos.push({text:v,done:false}); saveDB(); toast("帰社Todoに追加した"); };
+    b.appendChild(cp);
+  });
+}
+function nextStart(ctx){
+  const s=storeOf(ctx.date,ctx.id);
+  if(!s.running){
+    if(!s.steps[s.cur]) s.cur=0;
+    s.running=true; s.startAt=Date.now();
+  } else {
     const st=s.steps[s.cur]; st.sec+=elapsed(s); st.done=true;
-    if(s.cur<s.steps.length-1){ s.cur++; s.startAt=Date.now(); }
+    const nxt=s.steps.findIndex(x=>!x.done);
+    if(nxt>=0){ s.cur=nxt; s.startAt=Date.now(); }
     else { s.running=false; s.startAt=null; toast("店 完了 🎉"); }
   }
   saveDB(); renderStore();
 }
-function pause(){
-  const s=store(curStore);
+function pauseStore(ctx){
+  const s=storeOf(ctx.date,ctx.id);
   if(s.running){ const st=s.steps[s.cur]; if(st) st.sec+=elapsed(s); s.running=false; s.startAt=null; }
   saveDB(); renderStore();
 }
-function prevStep(){
-  const s=store(curStore);
-  const st=s.steps[s.cur]; if(st&&s.running){ st.sec+=elapsed(s); }
-  s.running=false; s.startAt=null;
-  if(s.cur>0){ s.cur--; s.steps[s.cur].done=false; }
+function switchStep(ctx,i){
+  const s=storeOf(ctx.date,ctx.id);
+  if(i===s.cur){
+    if(!s.running){ s.running=true; s.startAt=Date.now(); }
+  } else {
+    if(s.running){ s.steps[s.cur].sec+=elapsed(s); }
+    s.cur=i; s.steps[i].done=false;
+    s.running=true; s.startAt=Date.now();
+  }
   saveDB(); renderStore();
 }
-function skipStep(){
-  const s=store(curStore);
-  const st=s.steps[s.cur]; if(st){ if(s.running)st.sec+=elapsed(s); st.done=true; }
-  if(s.cur<s.steps.length-1){ s.cur++; if(!s.running)s.startAt=null; else s.startAt=Date.now(); }
-  else { s.running=false; s.startAt=null; }
-  saveDB(); renderStore();
+function editStepSheet(ctx,i){
+  const s=storeOf(ctx.date,ctx.id); const st=s.steps[i];
+  openSheet("✎ "+st.name+" の時間手修正",b=>{
+    const info=document.createElement("div"); info.className="mut";
+    info.textContent="数字だけで入力（1000=10分00秒 / 130=1分30秒 / 45=45秒）。現在 "+fmtMS(st.sec);
+    b.appendChild(info);
+    const prev=document.createElement("div"); prev.className="timer"; prev.style.fontSize="34px"; prev.textContent=fmtMS(st.sec);
+    const inp=mkKpField("",v=>{ prev.textContent=fmtMS(digitsToSec(v)); });
+    inp.style.cssText="width:100%;font-size:22px;margin-top:8px";
+    b.appendChild(inp); b.appendChild(prev);
+    const sv=document.createElement("button"); sv.className="btn-ok wfull"; sv.textContent="保存";
+    sv.onclick=()=>{
+      if(inp.value!==""){ st.sec=digitsToSec(inp.value); if(s.running&&s.cur===i)s.startAt=Date.now(); saveDB(); }
+      closeSheet();
+    };
+    b.appendChild(sv);
+    kpFocus(inp,v=>{ prev.textContent=fmtMS(digitsToSec(v)); });
+  });
 }
-function editStep(i){
-  const s=store(curStore); const st=s.steps[i];
-  const cur=fmtMS(st.sec);
-  const v=prompt(st.name+" の時間（分:秒 で入力）", cur);
-  if(v==null)return;
-  let sec=null;
-  if(v.indexOf(":")>=0){ const p=v.split(":"); sec=(parseInt(p[0])||0)*60+(parseInt(p[1])||0); }
-  else { const f=parseFloat(v); if(isFinite(f)) sec=Math.round(f*60); }
-  if(sec!=null&&sec>=0){ st.sec=sec; if(s.running&&s.cur===i)s.startAt=Date.now(); saveDB(); renderStore(); }
+function addExtraStep(ctx){
+  const s=storeOf(ctx.date,ctx.id);
+  openSheet("＋ その他ステップ追加",b=>{
+    const inp=document.createElement("input"); inp.className="wide"; inp.placeholder="作業名（自由記入）";
+    b.appendChild(inp);
+    const ok=document.createElement("button"); ok.className="btn-ok wfull"; ok.style.marginTop="10px"; ok.textContent="追加";
+    ok.onclick=()=>{ const v=inp.value.trim(); if(!v){toast("名前を入れて");return;}
+      s.steps.push({name:v,sec:0,done:false,extra:true}); saveDB(); closeSheet(); };
+    b.appendChild(ok);
+    setTimeout(()=>inp.focus(),50);
+  });
 }
-function setMemo(v){ store(curStore).memo=v; saveDB(); }
-function resetStore(){ if(!confirm(curStore+"店 の計測・数量・メモを全部消す？")) return; delete day().stores[curStore]; store(curStore); saveDB(); renderStore(); toast(curStore+"店 をリセット"); }
-function toggleQty(){ const b=document.getElementById("qtyBox"); const t=document.getElementById("qtyToggle"); b.classList.toggle("hide"); t.textContent=b.classList.contains("hide")?"▶":"▼"; }
+function finishStore(ctx,last){
+  const s=storeOf(ctx.date,ctx.id);
+  const undone=s.steps.filter(x=>!x.done&&!isExcluded(s,x)).length;
+  if(undone>0 && !confirm("未完了ステップが "+undone+" 個ある。進む？")) return;
+  if(s.running){ const st=s.steps[s.cur]; if(st){st.sec+=elapsed(s); st.done=true;} s.running=false; s.startAt=null; }
+  const d=dayOf(ctx.date);
+  if(last){ saveDB(); go("returnTodo"); }
+  else { d.storeIdx++; saveDB(); renderStore(); toast("→ "+d.order[d.storeIdx]+"店"); }
+}
+function renderPUInto(box,s){
+  if(!box)return;
+  box.innerHTML="";
+  const pu=perUnit(s);
+  if(pu.length===0){ box.innerHTML='<div class="mut">数量を入れると ○○あたり が出る</div>'; }
+  pu.forEach(([k,v])=>{ const el=document.createElement("div"); el.className="pu"; el.innerHTML='<span>'+k+'</span><span class="v">'+v+'</span>'; box.appendChild(el); });
+}
 
-// ===== HOME操作 =====
-function changeDate(v){ if(v){ curDate=v; renderHome(); } }
-function setEos(v){ day().eos = v===""?null:Number(v); saveDB(); }
-function resetDay(){ if(confirm(curDate+" のデータを消す？")){ delete DB.days[curDate]; saveDB(); renderHome(); } }
+// ================= ⑯ 帰社時Todo =================
+function renderReturn(){
+  const el=document.getElementById("scrReturn");
+  const d=dayOf(curDate);
+  el.innerHTML="";
+  const card=document.createElement("div"); card.className="card";
+  card.innerHTML='<b>⑯ 帰社時Todo（全体）</b><div class="mut">⑫全体引継ぎからコピーした分もここに入る</div>';
+  todoEditor(card,d.global.returnTodos);
+  el.appendChild(card);
+  const nx=document.createElement("button"); nx.className="btn-ok big";
+  nx.textContent = DB.course.load==="night" ? "⑰ 積み込み（夜積み）へ →" : "⑱ 引継ぎ整理へ →";
+  nx.onclick=()=>go(DB.course.load==="night"?"loadPM":"handover");
+  el.appendChild(nx);
+}
 
-// ===== 入出力 =====
+// ================= ⑱ 引継ぎ整理 =================
+function renderHandover(){
+  const el=document.getElementById("scrHandover");
+  const d=dayOf(curDate);
+  el.innerHTML='<div class="mut">今日出た引継ぎを整理（編集/削除）。ここで残した内容が翌日の④に出る。</div>';
+  const mkSec=(title,obj,key)=>{
+    const c=document.createElement("div"); c.className="card";
+    c.innerHTML='<b>'+title+'</b>';
+    const ta=document.createElement("textarea"); ta.rows=2; ta.value=obj[key]||""; ta.placeholder="（なし）";
+    ta.oninput=()=>{obj[key]=ta.value; saveDB();};
+    c.appendChild(ta); el.appendChild(c);
+  };
+  DB.course.stores.forEach(cs=>{
+    const s=d.stores[cs.id];
+    if(s) mkSec("⑪ "+cs.id+"店", s, "handover");
+  });
+  mkSec("⑫ 全体", d.global, "handover");
+  if(d.loading) mkSec("⑰ 積み込み", d.loading, "handover");
+  const nx=document.createElement("button"); nx.className="btn-ok big";
+  nx.textContent="✔ 今日を終える";
+  nx.onclick=()=>{ d.handoverDone=true; d.phase="done"; saveDB(); ui.mode="title"; render(); toast("おつかれさま 🎉"); };
+  el.appendChild(nx);
+}
+
+// ================= ⑭ 一覧モード =================
+function openList(){
+  ui.listDate=ui.listDate||todayStr();
+  document.getElementById("listOv").classList.remove("hide");
+  renderList();
+}
+function closeList(){ document.getElementById("listOv").classList.add("hide"); }
+function renderList(){
+  const el=document.getElementById("listInner");
+  const date=ui.listDate;
+  const d=dayOf(date);
+  el.innerHTML="";
+  const card=document.createElement("div"); card.className="card";
+  const r1=document.createElement("div"); r1.className="row sb";
+  r1.innerHTML='<span class="mut">日付</span>';
+  const di=document.createElement("input"); di.type="date"; di.className="date"; di.value=date;
+  di.onchange=()=>{ui.listDate=di.value||todayStr(); renderList();};
+  r1.appendChild(di); card.appendChild(r1);
+  const r2=document.createElement("div"); r2.className="row sb"; r2.style.marginTop="8px";
+  r2.innerHTML='<span class="mut">EOS</span><b>'+(d.eos??"—")+'</b>';
+  card.appendChild(r2);
+  if(d.loading&&(d.loading.sec>0||d.loading.running)){
+    const r3=document.createElement("div"); r3.className="row sb"; r3.style.marginTop="8px";
+    r3.innerHTML='<span class="mut">積み込み</span><b>'+fmtClock(loadingSec(d.loading))+'</b>';
+    card.appendChild(r3);
+  }
+  el.appendChild(card);
+
+  const ids = DB.course.stores.map(s=>s.id).concat(Object.keys(d.stores).filter(id=>!DB.course.stores.some(s=>s.id===id)));
+  ids.forEach(id=>{
+    const s=d.stores[id];
+    let badge='<span class="badge">未計測</span>', sub=typeName(courseType(id));
+    if(s){
+      const anyTime=s.steps.some(x=>x.sec>0);
+      const allDone=s.steps.filter(x=>!isExcluded(s,x)).every(x=>x.done);
+      if(allDone&&anyTime) badge='<span class="badge done">完了 '+fmtClock(totalSec(s))+'</span>';
+      else if(anyTime||s.running) badge='<span class="badge active">計測中 '+fmtClock(totalSec(s))+'</span>';
+      const bits=[];
+      const cc=caseCount(s); if(cc)bits.push("ケース"+cc);
+      const br=parseFloat(s.qty["バラ数"]); if(isFinite(br)&&br>0)bits.push("バラ"+br);
+      if(s.handover)bits.push("📝"); if(s.learn)bits.push("📚"); if(s.question)bits.push("💭");
+      if(s.todos&&s.todos.some(t=>!t.done))bits.push("✅");
+      if(bits.length)sub=bits.join(" ／ ");
+    }
+    const div=document.createElement("div"); div.className="store-item";
+    div.innerHTML='<div><div class="nm">'+id+'店</div><div class="mut">'+sub+'</div></div>'+badge;
+    div.onclick=()=>{ ui.prevMode=ui.mode; ui.freeCtx={date,id,free:true}; closeList(); ui.mode="stores"; render(); };
+    el.appendChild(div);
+  });
+  const rd=document.createElement("button"); rd.className="btn-ghost wfull"; rd.style.cssText="margin-top:10px;color:var(--danger)";
+  rd.textContent="この日をリセット";
+  rd.onclick=()=>{ if(confirm(date+" のデータを消す？")){ delete DB.days[date]; saveDB(); renderList(); } };
+  el.appendChild(rd);
+}
+
+// ================= 入出力 =================
 function exportJSON(){
   const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
@@ -340,17 +964,48 @@ function exportJSON(){
 function importJSON(e){
   const f=e.target.files[0]; if(!f)return;
   const r=new FileReader();
-  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(d&&d.days){ DB=d; saveDB(); renderHome(); toast("インポートした"); } else toast("形式が違う"); }catch(err){ toast("読み込み失敗"); } };
+  r.onload=()=>{ try{ let o=JSON.parse(r.result);
+      if(o&&o.days){ if(!o.version)o=migrateV1(o); if(!o.course)o.course=defaultCourse(); DB=o; saveDB(); render(); toast("インポートした"); }
+      else toast("形式が違う"); }catch(err){ toast("読み込み失敗"); } };
   r.readAsText(f); e.target.value="";
 }
 
-// ===== toast =====
+// ================= toast / ticker =================
 let toastT=null;
-function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1600); }
+function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1700); }
+function tick(){
+  if(ui.mode==="stores"){
+    const ctx=activeCtx(); if(!ctx)return;
+    const s=storeOf(ctx.date,ctx.id);
+    const st=s.steps[s.cur];
+    const td=document.getElementById("timerDisp"); if(td) td.textContent=fmtTimer(st?liveSec(s,s.cur):0);
+    const cn=document.getElementById("curStepName"); if(cn) cn.textContent=st?(st.name+(s.running?" ⏱":"")):"完了";
+    const tm=document.getElementById("tm"+s.cur); if(tm&&st) tm.textContent=fmtClock(liveSec(s,s.cur)).replace(/^0:/,"");
+    const tt=document.getElementById("stepTotal"); if(tt) tt.textContent=fmtClock(totalSec(s));
+    if(s.running) renderPUInto(document.getElementById("puList"),s);
+  } else if(ui.mode==="loadAM"||ui.mode==="loadPM"){
+    const l=loadingOf(curDate);
+    const lt=document.getElementById("loadTimer"); if(lt) lt.textContent=fmtTimer(loadingSec(l));
+    if(l.running) renderLoadStats(ui.mode==="loadAM"?"AM":"PM",l);
+  }
+}
 
-// ===== init =====
-renderHome();
-if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('./sw.js').catch(()=>{})); }
+// ================= 描画フック（ドロワーバー表示制御） =================
+const _origRender=render;
+render=function(){
+  _origRender();
+  if(ui.mode!=="stores") hideDrawerBar();
+};
+
+// ================= init =================
+(function init(){
+  const d=DB.days[curDate];
+  if(d && d.phase && d.phase!=="title" && d.phase!=="done") ui.mode=d.phase;
+  else ui.mode="title";
+  render();
+  ticker=setInterval(tick,500);
+  if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('./sw.js').catch(()=>{})); }
+})();
 </script>
 </body>
 </html>
