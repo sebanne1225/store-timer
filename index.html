@@ -692,6 +692,17 @@ function renderStore(){
   gr.appendChild(bn); gr.appendChild(bp); tcard.appendChild(gr);
   el.appendChild(tcard);
 
+  // Todo 常時表示（⑬店Todo + 全体Todo）
+  const todoCard=document.createElement("div"); todoCard.className="card";
+  todoCard.innerHTML='<b>✅ Todo</b>';
+  const shS=document.createElement("div"); shS.className="mut"; shS.style.marginTop="6px"; shS.textContent="⑬ "+ctx.id+"店";
+  todoCard.appendChild(shS);
+  todoEditor(todoCard,s.todos);
+  const shG=document.createElement("div"); shG.className="mut"; shG.style.marginTop="12px"; shG.textContent="全体";
+  todoCard.appendChild(shG);
+  todoEditor(todoCard,d.global.todos);
+  el.appendChild(todoCard);
+
   // ステップ一覧（タップで切り替え・✎で手修正）
   const scard=document.createElement("div"); scard.className="card";
   scard.innerHTML='<b>ステップ</b> <span class="mut">タップ=そのステップへ切替スタート/再開</span>';
@@ -761,7 +772,6 @@ function renderDrawerBar(ctx,s){
     ["💭","疑問",()=>memoSheet("⑩ 疑問メモ（"+ctx.id+"店）",s,"question"),!!s.question],
     ["📝","店引継",()=>memoSheet("⑪ 引継ぎ（"+ctx.id+"店）",s,"handover"),!!s.handover],
     ["🌐","全体引継",()=>globalHandoverSheet(ctx),!!d.global.handover],
-    ["✅","店Todo",()=>openSheet("⑬ Todo（"+ctx.id+"店）",b=>todoEditor(b,s.todos)),s.todos.some(t=>!t.done)],
   ];
   items.forEach(([ico,lab,fn,has])=>{
     const b=document.createElement("button");
