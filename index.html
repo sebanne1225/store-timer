@@ -61,6 +61,11 @@
  .todo-row .done-txt{text-decoration:line-through;color:var(--mut);}
  .todo-row input[type=checkbox]{width:22px;height:22px;}
  .todo-row .del{background:none;color:var(--danger);padding:4px 8px;}
+ .todo-row .tgl{background:none;border:1px solid #30363d;color:var(--mut);padding:5px 9px;font-size:12px;border-radius:8px;flex:none;}
+ .todo-row .tgl.on{border-color:var(--warn);color:var(--warn);background:rgba(241,196,15,.12);}
+ .tagpill{display:inline-block;font-size:11px;padding:1px 7px;border-radius:12px;background:#2a3340;color:var(--mut);margin-left:5px;white-space:nowrap;}
+ .tagpill.send{background:rgba(241,196,15,.15);color:var(--warn);}
+ .chip.send.on{background:#8a6d1c;}
  .chk{display:flex;align-items:center;gap:12px;padding:14px;background:#0d1117;border-radius:10px;margin:8px 0;font-size:17px;cursor:pointer;}
  .chk input{width:26px;height:26px;}
  .ord{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#0d1117;border-radius:10px;margin:6px 0;}
@@ -89,10 +94,11 @@
 </head>
 <body>
 <div id="hdr">
- <span id="hdrTitle">🕘 店舗作業タイマー</span>
+ <span id="hdrTitle">🕘 店舗作業タイマー</span><span id="hdrVer" class="mut" style="font-size:11px;margin-left:4px"></span>
  <div class="row">
   <button class="btn-ghost" id="btnHome" onclick="confirmHome()">🏠</button>
   <button class="btn-ghost" onclick="openList()">📋 一覧</button>
+  <button class="btn-ghost" onclick="openRecords()">📖 記録</button>
  </div>
 </div>
 
@@ -113,6 +119,14 @@
   <button class="btn-ghost" onclick="closeList()">✕ 閉じる</button>
  </div>
  <div class="inner" id="listInner"></div>
+</div>
+
+<div id="recOv" class="overlay hide">
+ <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#0d1117;border-bottom:1px solid #202938;">
+  <b>📖 記録</b>
+  <button class="btn-ghost" onclick="closeRecords()">✕ 閉じる</button>
+ </div>
+ <div class="inner" id="recInner"></div>
 </div>
 
 <div id="sheetBg" class="sheet-bg hide" onclick="closeSheet()"></div>
@@ -136,15 +150,24 @@
 "use strict";
 // ================= 定義 =================
 const PRESET = {
-  A:{steps:["冷食","アイス"], qty:["アイス数","冷食数"], exclude:[]},
+  A:{steps:["冷食","アイス"], qty:["冷食数","アイス数"], exclude:[]},
   C:{steps:["積み下ろし+検品","アイス","バラ","冷食","前出し","チェック+片付け","週次チェック(任意)"], qty:["アイス数","冷食数","オリコン数","バラ数"], exclude:["週次チェック(任意)"]},
   S:{steps:["積み下ろし","検品+陳列"], qty:["ケース(アイス+冷食)数"], exclude:[]},
 };
 const CHECKLIST = ["全店の書類があるか","ハンディのデータ入れ・所持","欠品報告はないか"];
 const PHASE_LABEL = {title:"🕘 店舗作業タイマー", course:"コース変更", input:"②③ 数値入力", plan:"④⑤ 計画",
   loadAM:"⑰ 積み込み（朝積み）", loadPM:"⑰ 積み込み（夜積み）", order:"⑥ 回る順番", checklist:"⑦ 出発前チェック",
-  stores:"⑧ 計測", returnTodo:"⑯ 帰社時Todo", handover:"⑱ 引継ぎ整理"};
+  stores:"⑧ 計測", returnTodo:"⑯ 帰社時チェック", handover:"⑱ 棚卸し"};
 const DAY_PHASES = ["input","plan","loadAM","order","checklist","stores","returnTodo","loadPM","handover","done"];
+const APP_VERSION = "0.3.0";
+const TAGS = {
+  do:{label:"やる",emoji:"✅"},
+  send:{label:"申送",emoji:"📝"},
+  learn:{label:"学び",emoji:"📚"},
+  memo:{label:"メモ",emoji:"💭"},
+  line:{label:"LINE",emoji:"📱"},
+  tana:{label:"棚割差",emoji:"📐"},
+};
 
 function defaultCourse(){
   return {name:"現コース", load:"night", stores:[
@@ -155,18 +178,23 @@ function typeName(t){return t==="A"?"A: 冷食/アイス":t==="C"?"C: フル":"S
 // ================= 状態 =================
 let DB = loadDB();
 let curDate = todayStr();       // 進行中の営業日（=今日）
-let ui = {mode:"title", planTab:"__all__", inputStore:null, freeCtx:null, prevMode:null, listDate:todayStr(), orderDraft:null};
+let ui = {mode:"title", inputStore:null, freeCtx:null, prevMode:null, listDate:todayStr(), orderDraft:null, recFilter:"all"};
 let ticker = null;
+let swReg = null;
 
 // ================= DB =================
 function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function nextDateStr(ds){const d=new Date(ds+"T00:00:00");d.setDate(d.getDate()+1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-function freshDB(){ return {version:2, course:defaultCourse(), days:{}}; }
+function freshDB(){ return {version:3, course:defaultCourse(), storeMeta:{}, days:{}}; }
 function loadDB(){
   let o=null; try{o=JSON.parse(localStorage.getItem("storeTimer"));}catch(e){}
   if(!o||!o.days) return freshDB();
+  const beforeVer=o.version||1;
   if(!o.version) o=migrateV1(o);
+  if(o.version===2) o=migrateV2(o);
   if(!o.course) o.course=defaultCourse();
+  if(!o.storeMeta) o.storeMeta={};
+  if(beforeVer!==o.version){ try{localStorage.setItem("storeTimer",JSON.stringify(o));}catch(e){} }
   return o;
 }
 function migrateV1(o){
@@ -183,16 +211,48 @@ function migrateV1(o){
   }
   return {version:2, course:defaultCourse(), days:nd};
 }
+function migrateV2(o){
+  const nd={};
+  for(const date of Object.keys(o.days||{})){
+    const d=o.days[date];
+    const items=[], notes=[];
+    const addI=(text,tags,store)=>{ if(text&&text.trim()) items.push({id:genId(),text,tags,store,done:false,ts:Date.now(),carriedFrom:null}); };
+    const addN=(text)=>{ if(text&&text.trim()) notes.push({id:genId(),text,tags:[],ts:Date.now()}); };
+    for(const id of Object.keys(d.stores||{})){
+      const s=d.stores[id];
+      (s.todos||[]).forEach(t=>{ items.push({id:genId(),text:t.text,tags:["do"],store:id,done:!!t.done,ts:Date.now(),carriedFrom:null}); });
+      addI(s.learn,["learn"],id);
+      addI(s.question,["memo"],id);
+      if(s.handover&&s.handover.trim()) notes.push({id:genId(),text:"["+id+"] "+s.handover,tags:[],ts:Date.now()});
+      delete s.learn; delete s.question; delete s.handover; delete s.todos;
+    }
+    const g=d.global||{};
+    (g.todos||[]).forEach(t=>{ items.push({id:genId(),text:t.text,tags:["do"],store:null,done:!!t.done,ts:Date.now(),carriedFrom:null}); });
+    (g.returnTodos||[]).forEach(t=>{ items.push({id:genId(),text:t.text,tags:["do"],store:null,done:!!t.done,ts:Date.now(),carriedFrom:null}); });
+    addN(g.handover);
+    delete g.todos; delete g.returnTodos; delete g.handover;
+    if(d.loading){
+      const l=d.loading;
+      addI(l.learn,["learn"],null);
+      addI(l.question,["memo"],null);
+      if(l.handover&&l.handover.trim()) notes.push({id:genId(),text:"[積み込み] "+l.handover,tags:[],ts:Date.now()});
+      delete l.learn; delete l.question; delete l.handover;
+    }
+    d.items=items; d.notes=notes;
+    nd[date]=d;
+  }
+  return {version:3, course:o.course, storeMeta:o.storeMeta||{}, days:nd};
+}
 function saveDB(){localStorage.setItem("storeTimer",JSON.stringify(DB));}
 function dayOf(date){
   if(!DB.days[date]) DB.days[date]={phase:"title", eos:null, order:null, storeIdx:0, checklist:[false,false,false],
-    stores:{}, global:{handover:"",todos:[],returnTodos:[]}, loading:null, handoverDone:false};
+    stores:{}, global:{}, loading:null, handoverDone:false};
   const d=DB.days[date];
-  if(!d.global) d.global={handover:"",todos:[],returnTodos:[]};
-  if(!d.global.todos) d.global.todos=[];
-  if(!d.global.returnTodos) d.global.returnTodos=[];
+  if(!d.global) d.global={};
   if(d.storeIdx==null) d.storeIdx=0;
   if(!d.checklist) d.checklist=[false,false,false];
+  if(!d.items) d.items=[];
+  if(!d.notes) d.notes=[];
   return d;
 }
 function courseType(id){ const c=DB.course.stores.find(s=>s.id===id); return c?c.type:"C"; }
@@ -201,21 +261,50 @@ function storeOf(date,id){
   if(!d.stores[id]){
     const t=courseType(id);
     d.stores[id]={type:t, qty:{}, steps:PRESET[t].steps.map(n=>({name:n,sec:0,done:false})),
-      learn:"",question:"",handover:"", todos:[], cur:0, running:false, startAt:null};
+      cur:0, running:false, startAt:null};
   }
-  const s=d.stores[id];
-  ["learn","question","handover"].forEach(k=>{if(s[k]==null)s[k]="";});
-  if(!s.todos)s.todos=[];
-  return s;
+  return d.stores[id];
 }
 function loadingOf(date){
   const d=dayOf(date);
-  if(!d.loading) d.loading={sec:0,running:false,startAt:null,done:false,eosNext:null,learn:"",question:"",handover:""};
+  if(!d.loading) d.loading={sec:0,running:false,startAt:null,done:false,eosNext:null};
   return d.loading;
 }
 function prevRecordedDate(ds){
   return Object.keys(DB.days).filter(k=>k<ds).sort().reverse()
-    .find(k=>{const d=DB.days[k]; return d && (Object.keys(d.stores||{}).length>0 || d.loading || (d.global&&d.global.handover));});
+    .find(k=>{const d=DB.days[k]; return d && (Object.keys(d.stores||{}).length>0 || d.loading
+      || (d.items&&d.items.length>0) || (d.notes&&d.notes.length>0));});
+}
+
+// ================= 項目 / ノート / 棚割差 =================
+function genId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function itemsOf(date){ return dayOf(date).items; }
+function notesOf(date){ return dayOf(date).notes; }
+function tanawariOf(storeId){
+  if(!DB.storeMeta) DB.storeMeta={};
+  if(!DB.storeMeta[storeId]) DB.storeMeta[storeId]={tanawari:[]};
+  return DB.storeMeta[storeId];
+}
+function addItem(date,{text,tags,store}){
+  const it={id:genId(), text, tags:tags||[], store:store??null, done:false, ts:Date.now(), carriedFrom:null};
+  itemsOf(date).push(it); saveDB();
+  return it;
+}
+function addNote(date,{text,tags}){
+  const nt={id:genId(), text, tags:tags||[], ts:Date.now()};
+  notesOf(date).push(nt); saveDB();
+  return nt;
+}
+function carryOver(date){
+  const prev=prevRecordedDate(date);
+  if(!prev) return;
+  const d=dayOf(date);
+  if(d.carriedFrom===prev) return; // 二重実行ガード
+  itemsOf(prev).filter(it=>!it.done && it.tags.includes("send")).forEach(it=>{
+    itemsOf(date).push({id:genId(), text:it.text, tags:it.tags.slice(), store:it.store, done:false, ts:Date.now(), carriedFrom:prev});
+  });
+  d.carriedFrom=prev;
+  saveDB();
 }
 
 // ================= 時間計算 =================
@@ -302,38 +391,185 @@ function closeSheet(){
   kpClose();
   render(); // バッジ等の更新
 }
-function memoSheet(title,obj,key){
-  openSheet(title,b=>{
-    const ta=document.createElement("textarea"); ta.rows=5; ta.value=obj[key]||"";
-    ta.placeholder="ここに書く"; ta.oninput=()=>{obj[key]=ta.value; saveDB();};
-    b.appendChild(ta);
-  });
-}
 
-// ================= Todo エディタ =================
-function todoEditor(box,arr){
+// ================= 項目コンポーネント =================
+function removeItem(date,id){ const a=itemsOf(date); const i=a.findIndex(x=>x.id===id); if(i>=0){a.splice(i,1); saveDB();} }
+function itemTextSpan(it){
+  const sp=document.createElement("span");
+  const tx=document.createElement("span"); tx.textContent=it.text; if(it.done)tx.className="done-txt";
+  sp.appendChild(tx);
+  (it.tags||[]).forEach(k=>{ const t=TAGS[k]; if(!t)return;
+    const p=document.createElement("span"); p.className="tagpill"+(k==="send"?" send":""); p.textContent=t.emoji+t.label; sp.appendChild(p); });
+  if(it.store){ const p=document.createElement("span"); p.className="tagpill"; p.textContent=it.store; sp.appendChild(p); }
+  return sp;
+}
+// opts: {date, redraw, check, del, readOnly, badge, sendToggle, doneBtn}
+function itemRow(it,opts){
+  opts=opts||{};
+  const r=document.createElement("div"); r.className="todo-row";
+  if(opts.check&&!opts.readOnly){
+    const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!it.done;
+    cb.onchange=()=>{it.done=cb.checked; saveDB(); if(opts.redraw)opts.redraw();};
+    r.appendChild(cb);
+  }
+  r.appendChild(itemTextSpan(it));
+  if(opts.badge){ const b=document.createElement("span"); b.className="badge done"; b.style.flex="none"; b.textContent=opts.badge; r.appendChild(b); }
+  if(opts.readOnly) return r;
+  if(opts.sendToggle){
+    const tg=document.createElement("button"); tg.className="tgl"+(it.tags.includes("send")?" on":""); tg.textContent="📝申送";
+    tg.onclick=()=>{ const i=it.tags.indexOf("send"); if(i>=0)it.tags.splice(i,1); else it.tags.push("send"); saveDB(); if(opts.redraw)opts.redraw(); };
+    r.appendChild(tg);
+  }
+  if(opts.doneBtn){
+    const db=document.createElement("button"); db.className="tgl"; db.textContent="✓";
+    db.onclick=()=>{ it.done=true; saveDB(); if(opts.redraw)opts.redraw(); };
+    r.appendChild(db);
+  }
+  if(opts.del){
+    const del=document.createElement("button"); del.className="del"; del.textContent="−";
+    del.onclick=()=>{ removeItem(opts.date,it.id); if(opts.redraw)opts.redraw(); };
+    r.appendChild(del);
+  }
+  return r;
+}
+// opts: {date, defaultTags, defaultStore, redraw, placeholder}
+function itemInput(box,opts){
+  const sel={tags:(opts.defaultTags||[]).slice(), store:opts.defaultStore??null, tana:false};
+  const wrap=document.createElement("div"); wrap.style.marginTop="8px";
+  const row=document.createElement("div"); row.className="row";
+  const inp=document.createElement("input"); inp.className="wide"; inp.placeholder=opts.placeholder||"項目を追加"; inp.style.flex="1";
+  const btn=document.createElement("button"); btn.className="btn-accent"; btn.textContent="＋";
+  row.appendChild(inp); row.appendChild(btn);
+  const chips=document.createElement("div"); chips.className="chips"; chips.style.margin="6px 0 0";
+  const storeIds=DB.course.stores.map(cs=>cs.id);
+  if(opts.defaultStore&&!storeIds.includes(opts.defaultStore)) storeIds.push(opts.defaultStore);
+  const redrawChips=()=>{
+    chips.innerHTML="";
+    ["do","send","learn","memo","line","tana"].forEach(k=>{
+      const t=TAGS[k];
+      const on = k==="tana" ? sel.tana : (!sel.tana && sel.tags.includes(k));
+      const c=document.createElement("div");
+      c.className="chip"+(k==="send"?" send":"")+(on?" on":"");
+      c.style.cssText="padding:5px 10px;font-size:12px";
+      c.textContent=t.emoji+t.label;
+      c.onclick=()=>{
+        if(k==="tana"){ sel.tana=!sel.tana; }
+        else { sel.tana=false; const i=sel.tags.indexOf(k); if(i>=0)sel.tags.splice(i,1); else sel.tags.push(k); }
+        redrawChips();
+      };
+      chips.appendChild(c);
+    });
+    storeIds.forEach(id=>{
+      const c=document.createElement("div");
+      c.className="chip"+(sel.store===id?" on":"");
+      c.style.cssText="padding:5px 10px;font-size:12px";
+      c.textContent=id;
+      c.onclick=()=>{ sel.store=(sel.store===id?null:id); redrawChips(); };
+      chips.appendChild(c);
+    });
+  };
+  redrawChips();
+  const add=()=>{
+    const v=inp.value.trim(); if(!v)return;
+    if(sel.tana){
+      if(!sel.store){ toast("店を選んで"); return; }
+      tanawariOf(sel.store).tanawari.push({id:genId(),text:v,ts:Date.now()}); saveDB();
+      toast("📐 "+sel.store+" の棚割差に追加");
+    } else {
+      addItem(opts.date,{text:v,tags:sel.tags.slice(),store:sel.store});
+    }
+    inp.value="";
+    if(opts.redraw)opts.redraw();
+  };
+  btn.onclick=add; inp.onkeydown=e=>{if(e.key==="Enter")add();};
+  wrap.appendChild(row); wrap.appendChild(chips);
+  box.appendChild(wrap);
+}
+// opts: {title, mut, date, filter, rowOpts, input, empty}
+function itemListCard(el,opts){
+  const card=document.createElement("div"); card.className="card";
+  card.innerHTML='<b>'+opts.title+'</b>'+(opts.mut?'<div class="mut">'+opts.mut+'</div>':'');
   const list=document.createElement("div");
   const redraw=()=>{
     list.innerHTML="";
-    arr.forEach((t,i)=>{
-      const r=document.createElement("div"); r.className="todo-row";
-      const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!t.done;
-      cb.onchange=()=>{t.done=cb.checked; saveDB(); redraw();};
-      const sp=document.createElement("span"); sp.textContent=t.text; if(t.done)sp.className="done-txt";
-      const del=document.createElement("button"); del.className="del"; del.textContent="−";
-      del.onclick=()=>{arr.splice(i,1); saveDB(); redraw();};
-      r.appendChild(cb); r.appendChild(sp); r.appendChild(del); list.appendChild(r);
-    });
-    if(arr.length===0){ list.innerHTML='<div class="mut" style="padding:6px 0">（なし）</div>'; }
+    const arr=itemsOf(opts.date).filter(opts.filter||(()=>true));
+    if(arr.length===0){ list.innerHTML='<div class="mut" style="padding:6px 0">'+(opts.empty||"（なし）")+'</div>'; }
+    else arr.forEach(it=>list.appendChild(itemRow(it,Object.assign({date:opts.date,check:true,del:true,redraw},opts.rowOpts||{}))));
   };
   redraw();
-  const addRow=document.createElement("div"); addRow.className="row"; addRow.style.marginTop="8px";
-  const inp=document.createElement("input"); inp.className="wide"; inp.placeholder="Todo を追加"; inp.style.flex="1";
+  card.appendChild(list);
+  if(opts.input) itemInput(card,Object.assign({date:opts.date,redraw},opts.input));
+  el.appendChild(card);
+  return card;
+}
+// ノート一覧+追加。opts: {readOnly}
+function noteEditor(box,date,opts){
+  opts=opts||{};
+  const list=document.createElement("div");
+  const redraw=()=>{
+    list.innerHTML="";
+    const arr=notesOf(date);
+    if(arr.length===0){ list.innerHTML='<div class="mut" style="padding:6px 0">（ノートなし）</div>'; return; }
+    arr.forEach(nt=>{
+      const h=document.createElement("div"); h.className="hbox"; h.style.borderLeftColor="var(--accent)";
+      const tx=document.createElement("div"); tx.textContent=nt.text; h.appendChild(tx);
+      const hasTags=(nt.tags||[]).length>0;
+      if(hasTags||!opts.readOnly){
+        const foot=document.createElement("div"); foot.className="row sb"; foot.style.marginTop="6px";
+        const pills=document.createElement("span");
+        (nt.tags||[]).forEach(k=>{ const t=TAGS[k]; if(!t)return;
+          const p=document.createElement("span"); p.className="tagpill"; p.style.marginLeft="0"; p.style.marginRight="4px"; p.textContent=t.emoji+t.label; pills.appendChild(p); });
+        foot.appendChild(pills);
+        if(!opts.readOnly){
+          const del=document.createElement("button"); del.textContent="✕";
+          del.style.cssText="background:none;color:var(--danger);padding:2px 8px;font-size:13px";
+          del.onclick=()=>{ const a=notesOf(date); const i=a.findIndex(x=>x.id===nt.id); if(i>=0){a.splice(i,1); saveDB();} redraw(); };
+          foot.appendChild(del);
+        }
+        h.appendChild(foot);
+      }
+      list.appendChild(h);
+    });
+  };
+  redraw();
+  box.appendChild(list);
+  if(opts.readOnly) return;
+  let lineOn=false;
+  const ta=document.createElement("textarea"); ta.rows=3; ta.placeholder="LINE転記・長文メモなど"; ta.style.marginTop="8px";
+  const row=document.createElement("div"); row.className="row sb"; row.style.marginTop="6px";
+  const chip=document.createElement("div"); chip.className="chip"; chip.style.cssText="padding:5px 10px;font-size:12px";
+  chip.textContent=TAGS.line.emoji+TAGS.line.label;
+  chip.onclick=()=>{ lineOn=!lineOn; chip.classList.toggle("on",lineOn); };
+  const btn=document.createElement("button"); btn.className="btn-accent"; btn.textContent="＋ ノート追加";
+  btn.onclick=()=>{ const v=ta.value.trim(); if(!v)return; addNote(date,{text:v,tags:lineOn?["line"]:[]}); ta.value=""; redraw(); };
+  row.appendChild(chip); row.appendChild(btn);
+  box.appendChild(ta); box.appendChild(row);
+}
+// 棚割差（店永続）一覧+追加
+function tanawariEditor(box,storeId){
+  const list=document.createElement("div");
+  const redraw=()=>{
+    list.innerHTML="";
+    const arr=tanawariOf(storeId).tanawari;
+    if(arr.length===0){ list.innerHTML='<div class="mut" style="padding:6px 0">（なし）</div>'; return; }
+    arr.forEach(t=>{
+      const r=document.createElement("div"); r.className="todo-row";
+      const sp=document.createElement("span"); sp.textContent=t.text; r.appendChild(sp);
+      const del=document.createElement("button"); del.className="del"; del.textContent="−";
+      del.onclick=()=>{ const a=tanawariOf(storeId).tanawari; const i=a.findIndex(x=>x.id===t.id); if(i>=0){a.splice(i,1); saveDB();} redraw(); };
+      r.appendChild(del);
+      list.appendChild(r);
+    });
+  };
+  redraw();
+  box.appendChild(list);
+  const row=document.createElement("div"); row.className="row"; row.style.marginTop="8px";
+  const inp=document.createElement("input"); inp.className="wide"; inp.placeholder="棚割との差を記録"; inp.style.flex="1";
   const btn=document.createElement("button"); btn.className="btn-accent"; btn.textContent="＋";
-  const add=()=>{ const v=inp.value.trim(); if(!v)return; arr.push({text:v,done:false}); inp.value=""; saveDB(); redraw(); };
+  const add=()=>{ const v=inp.value.trim(); if(!v)return; tanawariOf(storeId).tanawari.push({id:genId(),text:v,ts:Date.now()}); saveDB(); inp.value=""; redraw(); };
   btn.onclick=add; inp.onkeydown=e=>{if(e.key==="Enter")add();};
-  addRow.appendChild(inp); addRow.appendChild(btn);
-  box.appendChild(list); box.appendChild(addRow);
+  row.appendChild(inp); row.appendChild(btn);
+  box.appendChild(row);
 }
 
 // ================= ルーター =================
@@ -370,7 +606,7 @@ function renderTitle(){
   else if(phase==="done") mainBtn='<div class="card" style="text-align:center">✔ 今日は完了。<span class="mut">個別の見直しは 📋一覧 から</span></div><button class="btn-ghost wfull" onclick="startDay()">もう一度フローを開く</button>';
   else mainBtn='<button class="btn-ok big" onclick="resumeDay()">▶ 続きから（'+(PHASE_LABEL[phase]||phase)+'）</button><button class="btn-ghost wfull" style="margin-top:8px" onclick="startDay()">最初（②数値入力）からやり直す</button>';
   el.innerHTML=
-   '<h1>🕘 店舗作業タイマー <span class="mut" style="font-size:12px">v0.2</span></h1>'+
+   '<h1>🕘 店舗作業タイマー <span class="mut" style="font-size:12px">v'+APP_VERSION+'</span></h1>'+
    '<div class="card"><div class="row sb"><span class="mut">今日</span><b>'+curDate+'</b></div>'+
    '<div class="row sb" style="margin-top:6px"><span class="mut">コース</span><b>'+DB.course.name+'（'+(DB.course.load==="night"?"夜積み":"朝積み")+'・'+DB.course.stores.length+'店）</b></div></div>'+
    mainBtn+
@@ -384,7 +620,7 @@ function renderTitle(){
    '<button class="btn-ghost wfull" style="margin-top:8px;color:var(--danger)" onclick="resetDay()">今日のデータをリセット</button></div>'+
    '<div class="mut" style="text-align:center">計測=店到着〜出発（車移動は測らない）</div>';
 }
-function startDay(){ dayOf(curDate); go("input"); }
+function startDay(){ dayOf(curDate); carryOver(curDate); go("input"); }
 function resumeDay(){ const d=dayOf(curDate); go(d.phase); }
 function resetDay(){ if(confirm(curDate+" のデータを全部消す？")){ delete DB.days[curDate]; saveDB(); render(); } }
 
@@ -463,6 +699,9 @@ function renderInput(){
   chipCard.appendChild(form);
   el.appendChild(chipCard);
 
+  itemListCard(el,{title:"✅ 今日の項目", mut:"やること・気付きを追加（タグで種類分け）", date:curDate,
+    input:{defaultTags:["do"], defaultStore:null}});
+
   const nx=document.createElement("button"); nx.className="btn-ok big"; nx.textContent="④ 計画へ →";
   nx.onclick=()=>{kpClose(); go("plan");};
   el.appendChild(nx);
@@ -496,49 +735,39 @@ function buildQtyForm(box, date, id, withOricon){
 // ================= ④⑤ 計画 =================
 function renderPlan(){
   const el=document.getElementById("scrPlan");
-  const d=dayOf(curDate);
+  dayOf(curDate);
   const prev=prevRecordedDate(curDate);
-  const pd=prev?DB.days[prev]:null;
   el.innerHTML="";
   const info=document.createElement("div"); info.className="mut";
-  info.textContent=prev?("前日引継ぎ: "+prev+" から"):"前日の記録なし";
+  info.textContent=prev?("前回の記録: "+prev):"前日の記録なし";
   el.appendChild(info);
 
-  const chips=document.createElement("div"); chips.className="chips";
-  const tabs=[["__all__","全体"]].concat(DB.course.stores.map(cs=>[cs.id,cs.id]));
-  tabs.forEach(([key,label])=>{
-    const c=document.createElement("div"); c.className="chip"+(ui.planTab===key?" on":"");
-    c.textContent=label;
-    let hasH=false;
-    if(pd){
-      if(key==="__all__") hasH=!!(pd.global&&pd.global.handover)||!!(pd.loading&&pd.loading.handover);
-      else hasH=!!(pd.stores[key]&&pd.stores[key].handover);
-    }
-    if(hasH){const dot=document.createElement("span");dot.className="dot";c.appendChild(dot);}
-    c.onclick=()=>{ui.planTab=key; renderPlan();};
-    chips.appendChild(c);
-  });
-  el.appendChild(chips);
+  // 📬 昨日から届いた項目（carry 済み + 済・報告）
+  const inbox=document.createElement("div"); inbox.className="card";
+  inbox.innerHTML='<b>📬 昨日から届いた項目</b><div class="mut">📝申送付きの未完了が自動で届く。済んだらチェック</div>';
+  const ilist=document.createElement("div");
+  const redrawInbox=()=>{
+    ilist.innerHTML="";
+    const carried=itemsOf(curDate).filter(it=>it.carriedFrom);
+    const reported=prev?itemsOf(prev).filter(it=>it.done&&it.tags.includes("send")):[];
+    if(carried.length===0&&reported.length===0){ ilist.innerHTML='<div class="mut" style="padding:6px 0">（なし）</div>'; return; }
+    carried.forEach(it=>ilist.appendChild(itemRow(it,{date:curDate,check:true,del:true,redraw:redrawInbox})));
+    reported.forEach(it=>ilist.appendChild(itemRow(it,{readOnly:true,badge:"✓済・報告"})));
+  };
+  redrawInbox();
+  inbox.appendChild(ilist); el.appendChild(inbox);
 
-  const hcard=document.createElement("div"); hcard.className="card";
-  hcard.innerHTML='<b>📝 前日の引継ぎ</b>';
-  let htxt="";
-  if(pd){
-    if(ui.planTab==="__all__"){
-      if(pd.global&&pd.global.handover) htxt+=pd.global.handover;
-      if(pd.loading&&pd.loading.handover) htxt+=(htxt?"\n":"")+"[積み込み] "+pd.loading.handover;
-    } else if(pd.stores[ui.planTab]&&pd.stores[ui.planTab].handover) htxt=pd.stores[ui.planTab].handover;
-  }
-  const hb=document.createElement("div");
-  if(htxt){ hb.className="hbox"; hb.textContent=htxt; }
-  else { hb.className="mut"; hb.style.padding="6px 0"; hb.textContent="（引継ぎなし）"; }
-  hcard.appendChild(hb); el.appendChild(hcard);
+  // 📄 昨日のノート（read-only）
+  const ncard=document.createElement("div"); ncard.className="card";
+  ncard.innerHTML='<b>📄 昨日のノート</b>';
+  if(prev) noteEditor(ncard,prev,{readOnly:true});
+  else ncard.innerHTML+='<div class="mut" style="padding:6px 0">（ノートなし）</div>';
+  el.appendChild(ncard);
 
-  const tcard=document.createElement("div"); tcard.className="card";
-  tcard.innerHTML='<b>✅ 今日のTodo（'+(ui.planTab==="__all__"?"全体":ui.planTab+"店")+'）</b><div class="mut">時間は測らないチェックリスト。計測する作業は⑧の「その他」で</div>';
-  const arr = ui.planTab==="__all__" ? d.global.todos : storeOf(curDate,ui.planTab).todos;
-  todoEditor(tcard,arr);
-  el.appendChild(tcard);
+  // ✅ 今日の項目（carry 分以外）+ 追加
+  itemListCard(el,{title:"✅ 今日の項目", mut:"今日やること・気付きを追加", date:curDate,
+    filter:it=>!it.carriedFrom,
+    input:{defaultTags:["do"], defaultStore:null}});
 
   const nx=document.createElement("button"); nx.className="btn-ok big";
   nx.textContent = DB.course.load==="morning" ? "⑰ 積み込みへ →" : "⑥ 順番確認へ →";
@@ -563,6 +792,9 @@ function renderLoad(mode){
   const b2=document.createElement("button"); b2.className="btn-ghost big"; b2.textContent="完了 ✔";
   b2.onclick=()=>{ if(l.running){l.sec+=Math.round((Date.now()-l.startAt)/1000);l.running=false;l.startAt=null;} l.done=true; saveDB(); renderLoad(mode); };
   gr.appendChild(b1); gr.appendChild(b2); card.appendChild(gr);
+  const eb=document.createElement("button"); eb.className="btn-ghost wfull"; eb.style.marginTop="8px"; eb.textContent="✎ 時間手修正";
+  eb.onclick=()=>editLoadSheet();
+  card.appendChild(eb);
   el.appendChild(card);
 
   const ecard=document.createElement("div"); ecard.className="card";
@@ -579,21 +811,38 @@ function renderLoad(mode){
   ecard.appendChild(stats); el.appendChild(ecard);
   renderLoadStats(mode,l);
 
-  const memoCard=document.createElement("div"); memoCard.className="card";
-  memoCard.innerHTML='<b>メモ</b>';
-  const mr=document.createElement("div"); mr.className="row"; mr.style.marginTop="8px";
-  [["📚 学び","learn"],["💭 疑問","question"],["📝 引継ぎ","handover"]].forEach(([lab,key])=>{
-    const b=document.createElement("button"); b.className="btn-ghost"; b.style.flex="1"; b.style.fontSize="13px";
-    b.textContent=lab+(l[key]?" ●":"");
-    b.onclick=()=>memoSheet("⑰ 積み込み "+lab,l,key);
-    mr.appendChild(b);
-  });
-  memoCard.appendChild(mr); el.appendChild(memoCard);
+  itemListCard(el,{title:"✅ 項目（全体）", date:curDate,
+    filter:it=>it.store===null,
+    input:{defaultTags:["do"], defaultStore:null}});
+
+  const ncard=document.createElement("div"); ncard.className="card";
+  ncard.innerHTML='<b>📄 ノート</b>';
+  noteEditor(ncard,curDate);
+  el.appendChild(ncard);
 
   const nx=document.createElement("button"); nx.className="btn-ok big";
-  nx.textContent = mode==="AM" ? "⑥ 順番確認へ →" : "⑱ 引継ぎ整理へ →";
+  nx.textContent = mode==="AM" ? "⑥ 順番確認へ →" : "⑱ 棚卸しへ →";
   nx.onclick=()=>go(mode==="AM"?"order":"handover");
   el.appendChild(nx);
+}
+function editLoadSheet(){
+  const l=loadingOf(curDate);
+  openSheet("✎ 積み込み時間の手修正",b=>{
+    const info=document.createElement("div"); info.className="mut";
+    info.textContent="数字だけで入力（1000=10分00秒 / 130=1分30秒 / 45=45秒）。現在 "+fmtMS(l.sec);
+    b.appendChild(info);
+    const prev=document.createElement("div"); prev.className="timer"; prev.style.fontSize="34px"; prev.textContent=fmtMS(l.sec);
+    const inp=mkKpField("",v=>{ prev.textContent=fmtMS(digitsToSec(v)); });
+    inp.style.cssText="width:100%;font-size:22px;margin-top:8px";
+    b.appendChild(inp); b.appendChild(prev);
+    const sv=document.createElement("button"); sv.className="btn-ok wfull"; sv.textContent="保存";
+    sv.onclick=()=>{
+      if(inp.value!==""){ l.sec=digitsToSec(inp.value); if(l.running)l.startAt=Date.now(); saveDB(); }
+      closeSheet();
+    };
+    b.appendChild(sv);
+    kpFocus(inp,v=>{ prev.textContent=fmtMS(digitsToSec(v)); });
+  });
 }
 function renderLoadStats(mode,l){
   const d=dayOf(curDate);
@@ -692,16 +941,16 @@ function renderStore(){
   gr.appendChild(bn); gr.appendChild(bp); tcard.appendChild(gr);
   el.appendChild(tcard);
 
-  // Todo 常時表示（⑬店Todo + 全体Todo）
-  const todoCard=document.createElement("div"); todoCard.className="card";
-  todoCard.innerHTML='<b>✅ Todo</b>';
-  const shS=document.createElement("div"); shS.className="mut"; shS.style.marginTop="6px"; shS.textContent="⑬ "+ctx.id+"店";
-  todoCard.appendChild(shS);
-  todoEditor(todoCard,s.todos);
-  const shG=document.createElement("div"); shG.className="mut"; shG.style.marginTop="12px"; shG.textContent="全体";
-  todoCard.appendChild(shG);
-  todoEditor(todoCard,d.global.todos);
-  el.appendChild(todoCard);
+  // 項目（この店+全体）
+  itemListCard(el,{title:"✅ 項目（"+ctx.id+"店+全体）", date:ctx.date,
+    filter:it=>it.store===ctx.id||it.store===null,
+    input:{defaultTags:["do"], defaultStore:ctx.id}});
+
+  // 棚割差（店永続）
+  const tanaCard=document.createElement("div"); tanaCard.className="card";
+  tanaCard.innerHTML='<b>📐 棚割差（'+ctx.id+'店・引き継がれる）</b><div class="mut">日次リセットなし。解消したら消す</div>';
+  tanawariEditor(tanaCard,ctx.id);
+  el.appendChild(tanaCard);
 
   // ステップ一覧（タップで切り替え・✎で手修正）
   const scard=document.createElement("div"); scard.className="card";
@@ -759,39 +1008,48 @@ function renderStore(){
   el.appendChild(nx);
 
   // ドロワーバー
-  renderDrawerBar(ctx,s);
+  renderDrawerBar(ctx);
 }
-function renderDrawerBar(ctx,s){
+function renderDrawerBar(ctx){
   let bar=document.getElementById("drawerBar");
   if(!bar){ bar=document.createElement("div"); bar.id="drawerBar"; bar.className="drawerbar"; document.body.appendChild(bar); }
   bar.classList.remove("hide");
   bar.innerHTML="";
   const d=dayOf(ctx.date);
-  const items=[
-    ["📚","学び",()=>memoSheet("⑨ 学びメモ（"+ctx.id+"店）",s,"learn"),!!s.learn],
-    ["💭","疑問",()=>memoSheet("⑩ 疑問メモ（"+ctx.id+"店）",s,"question"),!!s.question],
-    ["📝","店引継",()=>memoSheet("⑪ 引継ぎ（"+ctx.id+"店）",s,"handover"),!!s.handover],
-    ["🌐","全体引継",()=>globalHandoverSheet(ctx),!!d.global.handover],
+  const btns=[
+    ["📖","今朝の項目",()=>morningSheet(ctx),itemsOf(ctx.date).some(it=>it.carriedFrom)],
+    ["📐","棚割差",()=>tanawariSheet(ctx),tanawariOf(ctx.id).tanawari.length>0],
+    ["📄","ノート",()=>noteSheet(ctx),d.notes.length>0],
+    ["📖","記録",()=>openRecords(),false],
   ];
-  items.forEach(([ico,lab,fn,has])=>{
+  btns.forEach(([ico,lab,fn,has])=>{
     const b=document.createElement("button");
     b.innerHTML=ico+"<br>"+lab+(has?'<span class="dot"></span>':"");
     b.onclick=fn; bar.appendChild(b);
   });
 }
 function hideDrawerBar(){ const bar=document.getElementById("drawerBar"); if(bar)bar.classList.add("hide"); }
-function globalHandoverSheet(ctx){
-  const d=dayOf(ctx.date);
-  openSheet("⑫ 全体引継ぎ",b=>{
-    const ta=document.createElement("textarea"); ta.rows=5; ta.value=d.global.handover||"";
-    ta.oninput=()=>{d.global.handover=ta.value; saveDB();};
-    b.appendChild(ta);
-    const cp=document.createElement("button"); cp.className="btn-ghost wfull"; cp.style.marginTop="8px";
-    cp.textContent="⑯ 帰社Todoへコピー";
-    cp.onclick=()=>{ const v=(d.global.handover||"").trim(); if(!v){toast("空です");return;}
-      d.global.returnTodos.push({text:v,done:false}); saveDB(); toast("帰社Todoに追加した"); };
-    b.appendChild(cp);
+function morningSheet(ctx){
+  const prev=prevRecordedDate(ctx.date);
+  openSheet("📖 今朝の項目",b=>{
+    const carried=itemsOf(ctx.date).filter(it=>it.carriedFrom);
+    const reported=prev?itemsOf(prev).filter(it=>it.done&&it.tags.includes("send")):[];
+    if(carried.length===0&&reported.length===0){
+      const e=document.createElement("div"); e.className="mut"; e.textContent="（今朝届いた項目はない）"; b.appendChild(e);
+    }
+    carried.forEach(it=>b.appendChild(itemRow(it,{readOnly:true})));
+    reported.forEach(it=>b.appendChild(itemRow(it,{readOnly:true,badge:"✓済・報告"})));
+    const h=document.createElement("div"); h.className="mut"; h.style.marginTop="12px"; h.textContent="📄 昨日のノート";
+    b.appendChild(h);
+    if(prev) noteEditor(b,prev,{readOnly:true});
+    else { const e=document.createElement("div"); e.className="mut"; e.textContent="（ノートなし）"; b.appendChild(e); }
   });
+}
+function tanawariSheet(ctx){
+  openSheet("📐 棚割差（"+ctx.id+"店）",b=>tanawariEditor(b,ctx.id));
+}
+function noteSheet(ctx){
+  openSheet("📄 今日のノート",b=>noteEditor(b,ctx.date));
 }
 function nextStart(ctx){
   const s=storeOf(ctx.date,ctx.id);
@@ -800,7 +1058,8 @@ function nextStart(ctx){
     s.running=true; s.startAt=Date.now();
   } else {
     const st=s.steps[s.cur]; st.sec+=elapsed(s); st.done=true;
-    const nxt=s.steps.findIndex(x=>!x.done);
+    const nxt=s.steps.findIndex(x=>!x.done && !isExcluded(s,x)); // 合計外(任意)は自動遷移で飛ばす=タップ起動のみ
+
     if(nxt>=0){ s.cur=nxt; s.startAt=Date.now(); }
     else { s.running=false; s.startAt=null; toast("店 完了 🎉"); }
   }
@@ -870,39 +1129,62 @@ function renderPUInto(box,s){
   pu.forEach(([k,v])=>{ const el=document.createElement("div"); el.className="pu"; el.innerHTML='<span>'+k+'</span><span class="v">'+v+'</span>'; box.appendChild(el); });
 }
 
-// ================= ⑯ 帰社時Todo =================
+// ================= ⑯ 帰社時チェック =================
 function renderReturn(){
   const el=document.getElementById("scrReturn");
-  const d=dayOf(curDate);
+  dayOf(curDate);
   el.innerHTML="";
-  const card=document.createElement("div"); card.className="card";
-  card.innerHTML='<b>⑯ 帰社時Todo（全体）</b><div class="mut">⑫全体引継ぎからコピーした分もここに入る</div>';
-  todoEditor(card,d.global.returnTodos);
-  el.appendChild(card);
+  itemListCard(el,{title:"⑯ 帰社時チェック（全体の残り項目）", mut:"店に紐づかない未完了の項目。済んだらチェック", date:curDate,
+    filter:it=>it.store===null&&!it.done,
+    input:{defaultTags:["do"], defaultStore:null}});
   const nx=document.createElement("button"); nx.className="btn-ok big";
-  nx.textContent = DB.course.load==="night" ? "⑰ 積み込み（夜積み）へ →" : "⑱ 引継ぎ整理へ →";
+  nx.textContent = DB.course.load==="night" ? "⑰ 積み込み（夜積み）へ →" : "⑱ 棚卸しへ →";
   nx.onclick=()=>go(DB.course.load==="night"?"loadPM":"handover");
   el.appendChild(nx);
 }
 
-// ================= ⑱ 引継ぎ整理 =================
+// ================= ⑱ 棚卸し =================
 function renderHandover(){
   const el=document.getElementById("scrHandover");
   const d=dayOf(curDate);
-  el.innerHTML='<div class="mut">今日出た引継ぎを整理（編集/削除）。ここで残した内容が翌日の④に出る。</div>';
-  const mkSec=(title,obj,key)=>{
-    const c=document.createElement("div"); c.className="card";
-    c.innerHTML='<b>'+title+'</b>';
-    const ta=document.createElement("textarea"); ta.rows=2; ta.value=obj[key]||""; ta.placeholder="（なし）";
-    ta.oninput=()=>{obj[key]=ta.value; saveDB();};
-    c.appendChild(ta); el.appendChild(c);
+  el.innerHTML='<div class="mut">今日の項目を棚卸し。📝申送を付けた未完了は翌朝④に届く。完了分は📝で「✓済・報告」として翌朝に出せる。</div>';
+
+  const uc=document.createElement("div"); uc.className="card";
+  uc.innerHTML='<b>⏳ 未完了の項目</b><div class="mut">📝=翌朝へ申し送る ／ ✓=完了 ／ −=削除</div>';
+  const ulist=document.createElement("div");
+  const dc=document.createElement("div"); dc.className="card";
+  dc.innerHTML='<b>✔ 完了した項目</b><div class="mut">📝を付けると翌朝「✓済・報告」として表示される</div>';
+  const dlist=document.createElement("div");
+  const redraw=()=>{
+    ulist.innerHTML=""; dlist.innerHTML="";
+    const undone=itemsOf(curDate).filter(it=>!it.done);
+    const done=itemsOf(curDate).filter(it=>it.done);
+    if(undone.length===0) ulist.innerHTML='<div class="mut" style="padding:6px 0">（なし）</div>';
+    else undone.forEach(it=>ulist.appendChild(itemRow(it,{date:curDate,sendToggle:true,doneBtn:true,del:true,redraw})));
+    if(done.length===0) dlist.innerHTML='<div class="mut" style="padding:6px 0">（なし）</div>';
+    else done.forEach(it=>dlist.appendChild(itemRow(it,{date:curDate,sendToggle:true,redraw})));
   };
-  DB.course.stores.forEach(cs=>{
-    const s=d.stores[cs.id];
-    if(s) mkSec("⑪ "+cs.id+"店", s, "handover");
-  });
-  mkSec("⑫ 全体", d.global, "handover");
-  if(d.loading) mkSec("⑰ 積み込み", d.loading, "handover");
+  redraw();
+  uc.appendChild(ulist);
+  itemInput(uc,{date:curDate, defaultTags:["send"], defaultStore:null, redraw, placeholder:"申し送りを追加"});
+  el.appendChild(uc);
+  dc.appendChild(dlist);
+  el.appendChild(dc);
+
+  const nc=document.createElement("div"); nc.className="card";
+  nc.innerHTML='<b>📄 ノート整理</b>';
+  noteEditor(nc,curDate);
+  el.appendChild(nc);
+
+  const lc=document.createElement("div"); lc.className="card";
+  lc.innerHTML='<b>📚 今日の学び</b>';
+  const learns=itemsOf(curDate).filter(it=>it.tags.includes("learn"));
+  if(learns.length===0){ const e=document.createElement("div"); e.className="mut"; e.style.padding="6px 0"; e.textContent="（今日の学びはなし）"; lc.appendChild(e); }
+  else learns.forEach(it=>lc.appendChild(itemRow(it,{readOnly:true})));
+  const lm=document.createElement("div"); lm.className="mut"; lm.style.marginTop="6px"; lm.textContent="学びは消えず 📖記録 に溜まる";
+  lc.appendChild(lm);
+  el.appendChild(lc);
+
   const nx=document.createElement("button"); nx.className="btn-ok big";
   nx.textContent="✔ 今日を終える";
   nx.onclick=()=>{ d.handoverDone=true; d.phase="done"; saveDB(); ui.mode="title"; render(); toast("おつかれさま 🎉"); };
@@ -949,8 +1231,9 @@ function renderList(){
       const bits=[];
       const cc=caseCount(s); if(cc)bits.push("ケース"+cc);
       const br=parseFloat(s.qty["バラ数"]); if(isFinite(br)&&br>0)bits.push("バラ"+br);
-      if(s.handover)bits.push("📝"); if(s.learn)bits.push("📚"); if(s.question)bits.push("💭");
-      if(s.todos&&s.todos.some(t=>!t.done))bits.push("✅");
+      const dayItems=(d.items||[]).filter(it=>it.store===id);
+      if(dayItems.some(it=>!it.done))bits.push("✅");
+      if(dayItems.some(it=>(it.tags||[]).includes("learn")))bits.push("📚");
       if(bits.length)sub=bits.join(" ／ ");
     }
     const div=document.createElement("div"); div.className="store-item";
@@ -964,6 +1247,77 @@ function renderList(){
   el.appendChild(rd);
 }
 
+// ================= 📖 記録 =================
+function openRecords(){
+  document.getElementById("recOv").classList.remove("hide");
+  renderRecords();
+}
+function closeRecords(){ document.getElementById("recOv").classList.add("hide"); }
+function renderRecords(){
+  const el=document.getElementById("recInner");
+  el.innerHTML="";
+  const chips=document.createElement("div"); chips.className="chips";
+  [["all","すべて"],["do","✅やる"],["note","📄ノート"],["learn","📚学び"],["tana","📐棚割差"],["line","📱LINE"]].forEach(([key,label])=>{
+    const c=document.createElement("div"); c.className="chip"+(ui.recFilter===key?" on":"");
+    c.textContent=label;
+    c.onclick=()=>{ui.recFilter=key; renderRecords();};
+    chips.appendChild(c);
+  });
+  el.appendChild(chips);
+
+  const f=ui.recFilter;
+  if(f==="tana"){
+    // 棚割差は日付に紐づかない店永続メモ → 店別一覧
+    const ids=DB.course.stores.map(s=>s.id).concat(Object.keys(DB.storeMeta||{}).filter(id=>!DB.course.stores.some(s=>s.id===id)));
+    let any=false;
+    ids.forEach(id=>{
+      const meta=DB.storeMeta&&DB.storeMeta[id];
+      if(!meta||!meta.tanawari||meta.tanawari.length===0) return;
+      any=true;
+      const card=document.createElement("div"); card.className="card";
+      const h=document.createElement("b"); h.textContent="📐 "+id+"店"; card.appendChild(h);
+      meta.tanawari.forEach(t=>{
+        const r=document.createElement("div"); r.className="todo-row";
+        const sp=document.createElement("span"); sp.textContent=t.text; r.appendChild(sp);
+        card.appendChild(r);
+      });
+      el.appendChild(card);
+    });
+    if(!any){ const e=document.createElement("div"); e.className="mut"; e.style.padding="10px 0"; e.textContent="（棚割差の記録はまだない）"; el.appendChild(e); }
+    return;
+  }
+
+  const dates=Object.keys(DB.days).sort().reverse();
+  let any=false;
+  dates.forEach(date=>{
+    const d=DB.days[date];
+    if(!d) return;
+    let items=(d.items||[]).filter(it=>!it.carriedFrom); // carry コピーは出自日の原本を表示
+    let notes=d.notes||[];
+    if(f==="note"){ items=[]; }
+    else if(f!=="all"){ items=items.filter(it=>(it.tags||[]).includes(f)); notes=notes.filter(nt=>(nt.tags||[]).includes(f)); }
+    if(items.length===0&&notes.length===0) return;
+    any=true;
+    const card=document.createElement("div"); card.className="card";
+    const h=document.createElement("div"); h.innerHTML='<b>'+date+'</b>';
+    card.appendChild(h);
+    items.forEach(it=>card.appendChild(itemRow(it,{readOnly:true})));
+    notes.forEach(nt=>{
+      const hb=document.createElement("div"); hb.className="hbox"; hb.style.borderLeftColor="var(--accent)";
+      const tx=document.createElement("div"); tx.textContent=nt.text; hb.appendChild(tx);
+      if((nt.tags||[]).length){
+        const foot=document.createElement("div"); foot.style.marginTop="6px";
+        nt.tags.forEach(k=>{ const t=TAGS[k]; if(!t)return;
+          const p=document.createElement("span"); p.className="tagpill"; p.style.marginLeft="0"; p.style.marginRight="4px"; p.textContent=t.emoji+t.label; foot.appendChild(p); });
+        hb.appendChild(foot);
+      }
+      card.appendChild(hb);
+    });
+    el.appendChild(card);
+  });
+  if(!any){ const e=document.createElement("div"); e.className="mut"; e.style.padding="10px 0"; e.textContent="（記録はまだない）"; el.appendChild(e); }
+}
+
 // ================= 入出力 =================
 function exportJSON(){
   const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
@@ -975,7 +1329,7 @@ function importJSON(e){
   const f=e.target.files[0]; if(!f)return;
   const r=new FileReader();
   r.onload=()=>{ try{ let o=JSON.parse(r.result);
-      if(o&&o.days){ if(!o.version)o=migrateV1(o); if(!o.course)o.course=defaultCourse(); DB=o; saveDB(); render(); toast("インポートした"); }
+      if(o&&o.days){ if(!o.version)o=migrateV1(o); if(o.version===2)o=migrateV2(o); if(!o.course)o.course=defaultCourse(); if(!o.storeMeta)o.storeMeta={}; DB=o; saveDB(); render(); toast("インポートした"); }
       else toast("形式が違う"); }catch(err){ toast("読み込み失敗"); } };
   r.readAsText(f); e.target.value="";
 }
@@ -1000,6 +1354,18 @@ function tick(){
   }
 }
 
+// ================= 更新チェック / バナー =================
+function showUpdateBanner(){
+  if(document.getElementById("updateBanner")) return;
+  const b=document.createElement("div"); b.id="updateBanner";
+  b.style.cssText="position:fixed;top:0;left:0;right:0;z-index:60;background:#0d1117;border-bottom:2px solid var(--accent);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;";
+  b.innerHTML='<span>🔄 新しい版に更新されました</span>';
+  const btn=document.createElement("button"); btn.className="btn-accent"; btn.textContent="再読み込み";
+  btn.onclick=()=>location.reload();
+  b.appendChild(btn);
+  document.body.appendChild(b);
+}
+
 // ================= 描画フック（ドロワーバー表示制御） =================
 const _origRender=render;
 render=function(){
@@ -1009,12 +1375,23 @@ render=function(){
 
 // ================= init =================
 (function init(){
+  document.getElementById("hdrVer").textContent="v"+APP_VERSION;
   const d=DB.days[curDate];
   if(d && d.phase && d.phase!=="title" && d.phase!=="done") ui.mode=d.phase;
   else ui.mode="title";
   render();
   ticker=setInterval(tick,500);
-  if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('./sw.js').catch(()=>{})); }
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('./sw.js').then(reg=>{ swReg=reg; }).catch(()=>{});
+    });
+    document.addEventListener('visibilitychange', ()=>{
+      if(document.visibilityState==='visible' && swReg) swReg.update().catch(()=>{});
+    });
+    setInterval(()=>{ if(swReg) swReg.update().catch(()=>{}); }, 30*60*1000);
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{ if(hadController) showUpdateBanner(); });
+  }
 })();
 </script>
 </body>
