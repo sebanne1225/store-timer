@@ -58,13 +58,12 @@
  .chip .dot{position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:var(--warn);}
  .todo-row{display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid #202938;}
  .todo-row span{flex:1;}
- .todo-row .done-txt{text-decoration:line-through;color:var(--mut);}
- .todo-row input[type=checkbox]{width:22px;height:22px;}
  .todo-row .del{background:none;color:var(--danger);padding:4px 8px;}
- .todo-row .tgl{background:none;border:1px solid #30363d;color:var(--mut);padding:5px 9px;font-size:12px;border-radius:8px;flex:none;}
- .todo-row .tgl.on{border-color:var(--warn);color:var(--warn);background:rgba(241,196,15,.12);}
+ .tgl{background:none;border:1px solid #30363d;color:var(--mut);padding:5px 9px;font-size:12px;border-radius:8px;flex:none;}
+ .tgl.on{border-color:var(--warn);color:var(--warn);background:rgba(241,196,15,.12);}
  .tagpill{display:inline-block;font-size:11px;padding:1px 7px;border-radius:12px;background:#2a3340;color:var(--mut);margin-left:5px;white-space:nowrap;}
  .tagpill.send{background:rgba(241,196,15,.15);color:var(--warn);}
+ .tagpill.type{background:rgba(74,158,255,.15);color:var(--accent);}
  .chip.send.on{background:#8a6d1c;}
  .chk{display:flex;align-items:center;gap:12px;padding:14px;background:#0d1117;border-radius:10px;margin:8px 0;font-size:17px;cursor:pointer;}
  .chk input{width:26px;height:26px;}
@@ -73,6 +72,17 @@
  .ord.skip{opacity:.45;}
  .ord button{padding:7px 11px;font-size:15px;}
  .hbox{background:#0d1117;border-radius:10px;padding:10px;margin:6px 0;white-space:pre-wrap;font-size:14px;border-left:3px solid var(--warn);}
+ .notib{background:#2b2413;border:1px solid var(--warn);border-radius:10px;padding:12px;margin:8px 0;cursor:pointer;}
+ .ent{background:#0d1117;border-radius:10px;padding:10px 12px;margin:7px 0;cursor:pointer;border-left:3px solid transparent;}
+ .ent.is-send{border-left-color:var(--warn);}
+ .ent.is-line{border-left-color:var(--accent);}
+ .ent .etop{display:flex;align-items:flex-start;gap:9px;}
+ .ent .etop input[type=checkbox]{width:22px;height:22px;flex:none;margin-top:1px;}
+ .ent .etxt{flex:1;white-space:pre-wrap;line-height:1.5;font-size:15px;}
+ .ent .etxt.done-txt{text-decoration:line-through;color:var(--mut);}
+ .ent .emeta{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:6px;font-size:11px;color:var(--mut);}
+ .ent .emeta .dt{font-variant-numeric:tabular-nums;margin-right:2px;}
+ .ent .emeta .tagpill{margin-left:0;}
  .drawerbar{position:fixed;bottom:0;left:0;right:0;background:#0d1117;border-top:1px solid #202938;display:flex;gap:5px;padding:8px;justify-content:center;z-index:5;}
  .drawerbar button{flex:1;max-width:96px;padding:9px 4px;font-size:12px;position:relative;background:#2a3340;}
  .drawerbar button .dot{position:absolute;top:2px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--warn);}
@@ -82,6 +92,7 @@
  .sheet{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-radius:16px 16px 0 0;z-index:31;max-height:75dvh;display:flex;flex-direction:column;}
  .sheet .sh{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #202938;font-weight:bold;}
  .sheet .sc{overflow-y:auto;padding:12px 16px 20px;}
+ .sheet .act{display:flex;align-items:center;gap:10px;width:100%;background:#0d1117;margin:6px 0;text-align:left;font-size:15px;}
  .keypad{position:fixed;bottom:0;left:0;right:0;background:#0d1117;border-top:1px solid #202938;z-index:40;padding:8px;max-width:520px;margin:0 auto;}
  .keypad .kgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
  .keypad button{padding:14px;font-size:20px;font-weight:bold;background:#2a3340;}
@@ -98,7 +109,7 @@
  <div class="row">
   <button class="btn-ghost" id="btnHome" onclick="confirmHome()">🏠</button>
   <button class="btn-ghost" onclick="openList()">📋 一覧</button>
-  <button class="btn-ghost" onclick="openRecords()">📖 記録</button>
+  <button class="btn-ghost" onclick="openNote()">📓 ノート</button>
  </div>
 </div>
 
@@ -123,8 +134,8 @@
 
 <div id="recOv" class="overlay hide">
  <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#0d1117;border-bottom:1px solid #202938;">
-  <b>📖 記録</b>
-  <button class="btn-ghost" onclick="closeRecords()">✕ 閉じる</button>
+  <b id="noteHdrTitle">📓 ノート</b>
+  <button class="btn-ghost" id="noteHdrBtn" onclick="closeNote()">✕ 閉じる</button>
  </div>
  <div class="inner" id="recInner"></div>
 </div>
@@ -159,7 +170,7 @@ const PHASE_LABEL = {title:"🕘 店舗作業タイマー", course:"コース変
   loadAM:"⑰ 積み込み（朝積み）", loadPM:"⑰ 積み込み（夜積み）", order:"⑥ 回る順番", checklist:"⑦ 出発前チェック",
   stores:"⑧ 計測", returnTodo:"⑯ 帰社時チェック", handover:"⑱ 棚卸し"};
 const DAY_PHASES = ["input","plan","loadAM","order","checklist","stores","returnTodo","loadPM","handover","done"];
-const APP_VERSION = "0.3.0";
+const APP_VERSION = "0.4.0";
 const TAGS = {
   do:{label:"やる",emoji:"✅"},
   send:{label:"申送",emoji:"📝"},
@@ -178,20 +189,22 @@ function typeName(t){return t==="A"?"A: 冷食/アイス":t==="C"?"C: フル":"S
 // ================= 状態 =================
 let DB = loadDB();
 let curDate = todayStr();       // 進行中の営業日（=今日）
-let ui = {mode:"title", inputStore:null, freeCtx:null, prevMode:null, listDate:todayStr(), orderDraft:null, recFilter:"all"};
+let ui = {mode:"title", inputStore:null, freeCtx:null, listDate:todayStr(), orderDraft:null, recFilter:"all",
+  noteScope:"today", noteStore:null, notePick:false};
 let ticker = null;
 let swReg = null;
 
 // ================= DB =================
 function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function nextDateStr(ds){const d=new Date(ds+"T00:00:00");d.setDate(d.getDate()+1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-function freshDB(){ return {version:3, course:defaultCourse(), storeMeta:{}, days:{}}; }
+function freshDB(){ return {version:4, course:defaultCourse(), storeMeta:{}, days:{}}; }
 function loadDB(){
   let o=null; try{o=JSON.parse(localStorage.getItem("storeTimer"));}catch(e){}
   if(!o||!o.days) return freshDB();
   const beforeVer=o.version||1;
   if(!o.version) o=migrateV1(o);
   if(o.version===2) o=migrateV2(o);
+  if(o.version===3) o=migrateV3(o);
   if(!o.course) o.course=defaultCourse();
   if(!o.storeMeta) o.storeMeta={};
   if(beforeVer!==o.version){ try{localStorage.setItem("storeTimer",JSON.stringify(o));}catch(e){} }
@@ -243,16 +256,40 @@ function migrateV2(o){
   }
   return {version:3, course:o.course, storeMeta:o.storeMeta||{}, days:nd};
 }
+function migrateV3(o){
+  const nd={};
+  const doneCarries=[]; // 済んだ carry コピー（破棄前に原本へ done を書き戻す）
+  for(const date of Object.keys(o.days||{})){
+    const d=o.days[date];
+    (d.items||[]).filter(it=>it.carriedFrom&&it.done).forEach(it=>doneCarries.push(it));
+    const items=(d.items||[]).filter(it=>!it.carriedFrom); // carry コピーは破棄（原本が別日に残る）
+    const fromItems=items.map(it=>{
+      const hasDoSend=(it.tags||[]).includes("do")||(it.tags||[]).includes("send");
+      return {id:it.id, text:it.text, tags:it.tags||[], store:it.store??null, type:null, done:hasDoSend?!!it.done:null, ts:it.ts, org:null};
+    });
+    const fromNotes=(d.notes||[]).map(nt=>({id:nt.id, text:nt.text, tags:nt.tags||[], store:null, type:null, done:null, ts:nt.ts, org:null}));
+    d.entries=fromItems.concat(fromNotes).sort((a,b)=>a.ts-b.ts);
+    delete d.items; delete d.notes; delete d.carriedFrom;
+    nd[date]=d;
+  }
+  doneCarries.forEach(c=>{
+    const src=nd[c.carriedFrom]; if(!src) return;
+    const orig=src.entries.find(e=>e.text===c.text&&e.done===false&&e.tags.includes("send"));
+    if(orig) orig.done=true;
+  });
+  return {version:4, course:o.course, storeMeta:o.storeMeta||{}, days:nd};
+}
 function saveDB(){localStorage.setItem("storeTimer",JSON.stringify(DB));}
 function dayOf(date){
   if(!DB.days[date]) DB.days[date]={phase:"title", eos:null, order:null, storeIdx:0, checklist:[false,false,false],
-    stores:{}, global:{}, loading:null, handoverDone:false};
+    stores:{}, global:{}, loading:null, handoverDone:false, entries:[], meterStart:null, meterEnd:null};
   const d=DB.days[date];
   if(!d.global) d.global={};
   if(d.storeIdx==null) d.storeIdx=0;
   if(!d.checklist) d.checklist=[false,false,false];
-  if(!d.items) d.items=[];
-  if(!d.notes) d.notes=[];
+  if(!d.entries) d.entries=[];
+  if(d.meterStart===undefined) d.meterStart=null;
+  if(d.meterEnd===undefined) d.meterEnd=null;
   return d;
 }
 function courseType(id){ const c=DB.course.stores.find(s=>s.id===id); return c?c.type:"C"; }
@@ -273,37 +310,43 @@ function loadingOf(date){
 function prevRecordedDate(ds){
   return Object.keys(DB.days).filter(k=>k<ds).sort().reverse()
     .find(k=>{const d=DB.days[k]; return d && (Object.keys(d.stores||{}).length>0 || d.loading
-      || (d.items&&d.items.length>0) || (d.notes&&d.notes.length>0));});
+      || (d.entries&&d.entries.length>0));});
 }
 
 // ================= 項目 / ノート / 棚割差 =================
 function genId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
-function itemsOf(date){ return dayOf(date).items; }
-function notesOf(date){ return dayOf(date).notes; }
 function tanawariOf(storeId){
   if(!DB.storeMeta) DB.storeMeta={};
   if(!DB.storeMeta[storeId]) DB.storeMeta[storeId]={tanawari:[]};
   return DB.storeMeta[storeId];
 }
-function addItem(date,{text,tags,store}){
-  const it={id:genId(), text, tags:tags||[], store:store??null, done:false, ts:Date.now(), carriedFrom:null};
-  itemsOf(date).push(it); saveDB();
-  return it;
+
+// ================= entries（v4 統合ノート） =================
+function entriesOf(date){ return dayOf(date).entries; }
+function addEntry(date,{text,tags,store,type,org}){
+  tags=tags||[];
+  const hasDoSend=tags.includes("do")||tags.includes("send");
+  const e={id:genId(), text, tags:tags.slice(), store:store??null, type:type??null, done:hasDoSend?false:null, ts:Date.now(), org:org??null};
+  entriesOf(date).push(e); saveDB();
+  return e;
 }
-function addNote(date,{text,tags}){
-  const nt={id:genId(), text, tags:tags||[], ts:Date.now()};
-  notesOf(date).push(nt); saveDB();
-  return nt;
-}
-function carryOver(date){
-  const prev=prevRecordedDate(date);
-  if(!prev) return;
-  const d=dayOf(date);
-  if(d.carriedFrom===prev) return; // 二重実行ガード
-  itemsOf(prev).filter(it=>!it.done && it.tags.includes("send")).forEach(it=>{
-    itemsOf(date).push({id:genId(), text:it.text, tags:it.tags.slice(), store:it.store, done:false, ts:Date.now(), carriedFrom:prev});
+function removeEntry(date,id){ const a=entriesOf(date); const i=a.findIndex(x=>x.id===id); if(i>=0){a.splice(i,1); saveDB();} }
+function pendingSends(date){
+  const out=[];
+  Object.keys(DB.days).filter(k=>k<date).sort().forEach(k=>{
+    entriesOf(k).filter(e=>e.done===false&&e.tags.includes("send")).forEach(e=>out.push({date:k,e}));
   });
-  d.carriedFrom=prev;
+  return out;
+}
+function prevReported(date){
+  const prev=prevRecordedDate(date);
+  if(!prev) return [];
+  return entriesOf(prev).filter(e=>e.done===true&&e.tags.includes("send"));
+}
+
+// ================= メーター =================
+function setMeter(date,key,digits){
+  dayOf(date)[key] = digits===""?null:{v:Number(digits), ts:Date.now()};
   saveDB();
 }
 
@@ -313,10 +356,12 @@ function liveSec(s,i){ const st=s.steps[i]; if(!st)return 0; return st.sec + ((s
 function secOfName(s,name){ const i=s.steps.findIndex(x=>x.name===name); return i<0?0:liveSec(s,i); }
 function isExcluded(s,st){ return !!st.extra || PRESET[s.type].exclude.includes(st.name); }
 function totalSec(s){ let v=0; s.steps.forEach((st,i)=>{ if(!isExcluded(s,st)) v+=liveSec(s,i); }); return v; }
+function rawTotalSec(s){ let v=0; s.steps.forEach((st,i)=>{ v+=liveSec(s,i); }); return v; }
 function loadingSec(l){ return l.sec + ((l.running&&l.startAt)?Math.round((Date.now()-l.startAt)/1000):0); }
 function fmtClock(sec){ sec=Math.round(sec); const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; return h+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"); }
 function fmtMS(sec){ if(sec==null||!isFinite(sec))return "—"; sec=Math.round(sec); return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }
 function fmtTimer(sec){ sec=Math.round(sec); const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"); }
+function fmtHM(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
 function digitsToSec(v){ v=String(v||"").replace(/\D/g,""); if(!v)return 0; if(v.length<=2)return parseInt(v)||0; return (parseInt(v.slice(0,-2))||0)*60+(parseInt(v.slice(-2))||0); }
 
 // ================= per-unit =================
@@ -392,159 +437,7 @@ function closeSheet(){
   render(); // バッジ等の更新
 }
 
-// ================= 項目コンポーネント =================
-function removeItem(date,id){ const a=itemsOf(date); const i=a.findIndex(x=>x.id===id); if(i>=0){a.splice(i,1); saveDB();} }
-function itemTextSpan(it){
-  const sp=document.createElement("span");
-  const tx=document.createElement("span"); tx.textContent=it.text; if(it.done)tx.className="done-txt";
-  sp.appendChild(tx);
-  (it.tags||[]).forEach(k=>{ const t=TAGS[k]; if(!t)return;
-    const p=document.createElement("span"); p.className="tagpill"+(k==="send"?" send":""); p.textContent=t.emoji+t.label; sp.appendChild(p); });
-  if(it.store){ const p=document.createElement("span"); p.className="tagpill"; p.textContent=it.store; sp.appendChild(p); }
-  return sp;
-}
-// opts: {date, redraw, check, del, readOnly, badge, sendToggle, doneBtn}
-function itemRow(it,opts){
-  opts=opts||{};
-  const r=document.createElement("div"); r.className="todo-row";
-  if(opts.check&&!opts.readOnly){
-    const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!it.done;
-    cb.onchange=()=>{it.done=cb.checked; saveDB(); if(opts.redraw)opts.redraw();};
-    r.appendChild(cb);
-  }
-  r.appendChild(itemTextSpan(it));
-  if(opts.badge){ const b=document.createElement("span"); b.className="badge done"; b.style.flex="none"; b.textContent=opts.badge; r.appendChild(b); }
-  if(opts.readOnly) return r;
-  if(opts.sendToggle){
-    const tg=document.createElement("button"); tg.className="tgl"+(it.tags.includes("send")?" on":""); tg.textContent="📝申送";
-    tg.onclick=()=>{ const i=it.tags.indexOf("send"); if(i>=0)it.tags.splice(i,1); else it.tags.push("send"); saveDB(); if(opts.redraw)opts.redraw(); };
-    r.appendChild(tg);
-  }
-  if(opts.doneBtn){
-    const db=document.createElement("button"); db.className="tgl"; db.textContent="✓";
-    db.onclick=()=>{ it.done=true; saveDB(); if(opts.redraw)opts.redraw(); };
-    r.appendChild(db);
-  }
-  if(opts.del){
-    const del=document.createElement("button"); del.className="del"; del.textContent="−";
-    del.onclick=()=>{ removeItem(opts.date,it.id); if(opts.redraw)opts.redraw(); };
-    r.appendChild(del);
-  }
-  return r;
-}
-// opts: {date, defaultTags, defaultStore, redraw, placeholder}
-function itemInput(box,opts){
-  const sel={tags:(opts.defaultTags||[]).slice(), store:opts.defaultStore??null, tana:false};
-  const wrap=document.createElement("div"); wrap.style.marginTop="8px";
-  const row=document.createElement("div"); row.className="row";
-  const inp=document.createElement("input"); inp.className="wide"; inp.placeholder=opts.placeholder||"項目を追加"; inp.style.flex="1";
-  const btn=document.createElement("button"); btn.className="btn-accent"; btn.textContent="＋";
-  row.appendChild(inp); row.appendChild(btn);
-  const chips=document.createElement("div"); chips.className="chips"; chips.style.margin="6px 0 0";
-  const storeIds=DB.course.stores.map(cs=>cs.id);
-  if(opts.defaultStore&&!storeIds.includes(opts.defaultStore)) storeIds.push(opts.defaultStore);
-  const redrawChips=()=>{
-    chips.innerHTML="";
-    ["do","send","learn","memo","line","tana"].forEach(k=>{
-      const t=TAGS[k];
-      const on = k==="tana" ? sel.tana : (!sel.tana && sel.tags.includes(k));
-      const c=document.createElement("div");
-      c.className="chip"+(k==="send"?" send":"")+(on?" on":"");
-      c.style.cssText="padding:5px 10px;font-size:12px";
-      c.textContent=t.emoji+t.label;
-      c.onclick=()=>{
-        if(k==="tana"){ sel.tana=!sel.tana; }
-        else { sel.tana=false; const i=sel.tags.indexOf(k); if(i>=0)sel.tags.splice(i,1); else sel.tags.push(k); }
-        redrawChips();
-      };
-      chips.appendChild(c);
-    });
-    storeIds.forEach(id=>{
-      const c=document.createElement("div");
-      c.className="chip"+(sel.store===id?" on":"");
-      c.style.cssText="padding:5px 10px;font-size:12px";
-      c.textContent=id;
-      c.onclick=()=>{ sel.store=(sel.store===id?null:id); redrawChips(); };
-      chips.appendChild(c);
-    });
-  };
-  redrawChips();
-  const add=()=>{
-    const v=inp.value.trim(); if(!v)return;
-    if(sel.tana){
-      if(!sel.store){ toast("店を選んで"); return; }
-      tanawariOf(sel.store).tanawari.push({id:genId(),text:v,ts:Date.now()}); saveDB();
-      toast("📐 "+sel.store+" の棚割差に追加");
-    } else {
-      addItem(opts.date,{text:v,tags:sel.tags.slice(),store:sel.store});
-    }
-    inp.value="";
-    if(opts.redraw)opts.redraw();
-  };
-  btn.onclick=add; inp.onkeydown=e=>{if(e.key==="Enter")add();};
-  wrap.appendChild(row); wrap.appendChild(chips);
-  box.appendChild(wrap);
-}
-// opts: {title, mut, date, filter, rowOpts, input, empty}
-function itemListCard(el,opts){
-  const card=document.createElement("div"); card.className="card";
-  card.innerHTML='<b>'+opts.title+'</b>'+(opts.mut?'<div class="mut">'+opts.mut+'</div>':'');
-  const list=document.createElement("div");
-  const redraw=()=>{
-    list.innerHTML="";
-    const arr=itemsOf(opts.date).filter(opts.filter||(()=>true));
-    if(arr.length===0){ list.innerHTML='<div class="mut" style="padding:6px 0">'+(opts.empty||"（なし）")+'</div>'; }
-    else arr.forEach(it=>list.appendChild(itemRow(it,Object.assign({date:opts.date,check:true,del:true,redraw},opts.rowOpts||{}))));
-  };
-  redraw();
-  card.appendChild(list);
-  if(opts.input) itemInput(card,Object.assign({date:opts.date,redraw},opts.input));
-  el.appendChild(card);
-  return card;
-}
-// ノート一覧+追加。opts: {readOnly}
-function noteEditor(box,date,opts){
-  opts=opts||{};
-  const list=document.createElement("div");
-  const redraw=()=>{
-    list.innerHTML="";
-    const arr=notesOf(date);
-    if(arr.length===0){ list.innerHTML='<div class="mut" style="padding:6px 0">（ノートなし）</div>'; return; }
-    arr.forEach(nt=>{
-      const h=document.createElement("div"); h.className="hbox"; h.style.borderLeftColor="var(--accent)";
-      const tx=document.createElement("div"); tx.textContent=nt.text; h.appendChild(tx);
-      const hasTags=(nt.tags||[]).length>0;
-      if(hasTags||!opts.readOnly){
-        const foot=document.createElement("div"); foot.className="row sb"; foot.style.marginTop="6px";
-        const pills=document.createElement("span");
-        (nt.tags||[]).forEach(k=>{ const t=TAGS[k]; if(!t)return;
-          const p=document.createElement("span"); p.className="tagpill"; p.style.marginLeft="0"; p.style.marginRight="4px"; p.textContent=t.emoji+t.label; pills.appendChild(p); });
-        foot.appendChild(pills);
-        if(!opts.readOnly){
-          const del=document.createElement("button"); del.textContent="✕";
-          del.style.cssText="background:none;color:var(--danger);padding:2px 8px;font-size:13px";
-          del.onclick=()=>{ const a=notesOf(date); const i=a.findIndex(x=>x.id===nt.id); if(i>=0){a.splice(i,1); saveDB();} redraw(); };
-          foot.appendChild(del);
-        }
-        h.appendChild(foot);
-      }
-      list.appendChild(h);
-    });
-  };
-  redraw();
-  box.appendChild(list);
-  if(opts.readOnly) return;
-  let lineOn=false;
-  const ta=document.createElement("textarea"); ta.rows=3; ta.placeholder="LINE転記・長文メモなど"; ta.style.marginTop="8px";
-  const row=document.createElement("div"); row.className="row sb"; row.style.marginTop="6px";
-  const chip=document.createElement("div"); chip.className="chip"; chip.style.cssText="padding:5px 10px;font-size:12px";
-  chip.textContent=TAGS.line.emoji+TAGS.line.label;
-  chip.onclick=()=>{ lineOn=!lineOn; chip.classList.toggle("on",lineOn); };
-  const btn=document.createElement("button"); btn.className="btn-accent"; btn.textContent="＋ ノート追加";
-  btn.onclick=()=>{ const v=ta.value.trim(); if(!v)return; addNote(date,{text:v,tags:lineOn?["line"]:[]}); ta.value=""; redraw(); };
-  row.appendChild(chip); row.appendChild(btn);
-  box.appendChild(ta); box.appendChild(row);
-}
+// ================= 棚割差コンポーネント =================
 // 棚割差（店永続）一覧+追加
 function tanawariEditor(box,storeId){
   const list=document.createElement("div");
@@ -570,6 +463,167 @@ function tanawariEditor(box,storeId){
   btn.onclick=add; inp.onkeydown=e=>{if(e.key==="Enter")add();};
   row.appendChild(inp); row.appendChild(btn);
   box.appendChild(row);
+}
+
+// ================= エントリ部品（v0.4 統合ノート） =================
+function mdLabel(dateStr){
+  const p=dateStr.split("-");
+  return Number(p[1])+"/"+Number(p[2]);
+}
+function entMeta(e,opts){
+  opts=opts||{};
+  const wrap=document.createElement("div"); wrap.className="emeta";
+  if(opts.showDate&&opts.date){ const dt=document.createElement("span"); dt.className="dt"; dt.textContent=mdLabel(opts.date); wrap.appendChild(dt); }
+  if(e.org){ const o=document.createElement("span"); o.textContent=e.org+"で記入"; wrap.appendChild(o); }
+  (e.tags||[]).forEach(k=>{ const t=TAGS[k]; if(!t)return;
+    const p=document.createElement("span"); p.className="tagpill"+(k==="send"?" send":""); p.textContent=t.emoji+t.label; wrap.appendChild(p); });
+  if(e.type){ const p=document.createElement("span"); p.className="tagpill type"; p.textContent="🏬"+e.type+"店全部"; wrap.appendChild(p); }
+  if(e.store){ const p=document.createElement("span"); p.className="tagpill"; p.textContent=e.store; wrap.appendChild(p); }
+  return wrap;
+}
+// opts: {date, redraw, readOnly, pick, showDate, sendBtn}
+function entRow(e,opts){
+  opts=opts||{};
+  const div=document.createElement("div");
+  div.className="ent"+(e.tags.includes("send")?" is-send":"")+(e.tags.includes("line")?" is-line":"");
+  const top=document.createElement("div"); top.className="etop";
+  if(e.done!==null){
+    const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!e.done;
+    if(opts.readOnly) cb.disabled=true;
+    cb.onclick=ev=>ev.stopPropagation();
+    cb.onchange=()=>{ e.done=cb.checked; saveDB(); if(opts.redraw)opts.redraw(); };
+    top.appendChild(cb);
+  }
+  const tx=document.createElement("div"); tx.className="etxt"+(e.done?" done-txt":"");
+  tx.textContent=e.text;
+  top.appendChild(tx);
+  if(opts.sendBtn&&!opts.readOnly){
+    const tg=document.createElement("button"); tg.className="tgl"+(e.tags.includes("send")?" on":""); tg.textContent="📝申送";
+    tg.onclick=(ev)=>{
+      ev.stopPropagation();
+      const i=e.tags.indexOf("send");
+      if(i>=0){ e.tags.splice(i,1); if(!e.tags.includes("do")) e.done=null; }
+      else { e.tags.push("send"); if(e.done===null) e.done=false; }
+      saveDB();
+      if(opts.redraw)opts.redraw();
+    };
+    top.appendChild(tg);
+  }
+  div.appendChild(top);
+  div.appendChild(entMeta(e,opts));
+  if(!opts.readOnly){
+    if(opts.pick) div.onclick=()=>pickEntry(opts.date,e,opts.redraw);
+    else div.onclick=()=>entSheet(opts.date,e,opts.redraw);
+  }
+  return div;
+}
+// エントリ操作シート（✎編集 / 📋今日のやることへコピー / 📝申送切替 / −削除）
+function entSheet(date,e,redraw){
+  openSheet("エントリ操作",b=>{
+    b.appendChild(entRow(e,{readOnly:true}));
+    const mk=(label,fn)=>{ const bt=document.createElement("button"); bt.className="act"; bt.textContent=label; bt.onclick=fn; b.appendChild(bt); };
+    mk("✎ テキストを編集",()=>entEditSheet(date,e,redraw));
+    mk("📋 今日のやることへコピー",()=>{
+      addEntry(todayStr(),{text:e.text,tags:["do"],store:e.store,type:e.type,org:"📋←"+mdLabel(date)});
+      closeSheet(); if(redraw)redraw();
+      toast("✅ 今日のやることに追加した");
+    });
+    mk(e.tags.includes("send")?"📝 申送を外す":"📝 申送にする",()=>{
+      const i=e.tags.indexOf("send");
+      if(i>=0){ e.tags.splice(i,1); if(!e.tags.includes("do")) e.done=null; }
+      else { e.tags.push("send"); if(e.done===null) e.done=false; }
+      saveDB();
+      closeSheet(); if(redraw)redraw();
+    });
+    mk("− 削除",()=>{
+      removeEntry(date,e.id);
+      closeSheet(); if(redraw)redraw();
+      toast("削除した");
+    });
+  });
+}
+function entEditSheet(date,e,redraw){
+  openSheet("✎ テキストを編集",b=>{
+    const ta=document.createElement("textarea"); ta.rows=4; ta.value=e.text;
+    b.appendChild(ta);
+    const sv=document.createElement("button"); sv.className="btn-ok wfull"; sv.style.marginTop="10px"; sv.textContent="保存";
+    sv.onclick=()=>{
+      const v=ta.value.trim();
+      if(v) e.text=v;
+      saveDB();
+      closeSheet(); if(redraw)redraw();
+    };
+    b.appendChild(sv);
+  });
+}
+// コピーモード（📓ピッカー）でのタップ即コピー
+function pickEntry(date,e,redraw){
+  addEntry(todayStr(),{text:e.text,tags:["do"],store:e.store,type:e.type,org:"📋←"+mdLabel(date)});
+  if(redraw) redraw();
+  toast("✅ 今日のやることに追加した");
+}
+// opts: {date, defaultTags, defaultStore, org, redraw}
+function entryInput(box,opts){
+  const sel={tags:(opts.defaultTags||[]).slice(), store:opts.defaultStore??null, type:null, tana:false};
+  const wrap=document.createElement("div"); wrap.style.marginTop="8px";
+  const row=document.createElement("div"); row.className="row";
+  const inp=document.createElement("input"); inp.className="wide"; inp.placeholder="項目を追加"; inp.style.flex="1";
+  const btn=document.createElement("button"); btn.className="btn-accent"; btn.textContent="＋";
+  row.appendChild(inp); row.appendChild(btn);
+  const chips=document.createElement("div"); chips.className="chips"; chips.style.margin="6px 0 0";
+  const chips2=document.createElement("div"); chips2.className="chips"; chips2.style.margin="4px 0 0";
+  const storeIds=DB.course.stores.map(cs=>cs.id);
+  if(opts.defaultStore&&!storeIds.includes(opts.defaultStore)) storeIds.push(opts.defaultStore);
+  const redrawChips=()=>{
+    chips.innerHTML="";
+    ["do","send","learn","memo","line","tana"].forEach(k=>{
+      const t=TAGS[k];
+      const on = k==="tana" ? sel.tana : (!sel.tana && sel.tags.includes(k));
+      const c=document.createElement("div");
+      c.className="chip"+(k==="send"?" send":"")+(on?" on":"");
+      c.style.cssText="padding:5px 10px;font-size:12px";
+      c.textContent=t.emoji+t.label;
+      c.onclick=()=>{
+        if(k==="tana"){ sel.tana=!sel.tana; }
+        else { sel.tana=false; const i=sel.tags.indexOf(k); if(i>=0)sel.tags.splice(i,1); else sel.tags.push(k); }
+        redrawChips();
+      };
+      chips.appendChild(c);
+    });
+    ["C","A","S"].forEach(t=>{
+      const c=document.createElement("div");
+      c.className="chip"+(sel.type===t?" on":"");
+      c.style.cssText="padding:5px 10px;font-size:12px";
+      c.textContent="🏬 "+t;
+      c.onclick=()=>{ sel.type=(sel.type===t?null:t); redrawChips(); };
+      chips.appendChild(c);
+    });
+    chips2.innerHTML="";
+    storeIds.forEach(id=>{
+      const c=document.createElement("div");
+      c.className="chip"+(sel.store===id?" on":"");
+      c.style.cssText="padding:5px 10px;font-size:12px";
+      c.textContent=id;
+      c.onclick=()=>{ sel.store=(sel.store===id?null:id); redrawChips(); };
+      chips2.appendChild(c);
+    });
+  };
+  redrawChips();
+  const add=()=>{
+    const v=inp.value.trim(); if(!v)return;
+    if(sel.tana){
+      if(!sel.store){ toast("店を選んで"); return; }
+      tanawariOf(sel.store).tanawari.push({id:genId(),text:v,ts:Date.now()}); saveDB();
+      toast("📐 "+sel.store+" の棚割差に追加");
+    } else {
+      addEntry(opts.date,{text:v,tags:sel.tags.slice(),store:sel.store,type:sel.type,org:opts.org});
+    }
+    inp.value="";
+    if(opts.redraw)opts.redraw();
+  };
+  btn.onclick=add; inp.onkeydown=e=>{if(e.key==="Enter")add();};
+  wrap.appendChild(row); wrap.appendChild(chips); wrap.appendChild(chips2);
+  box.appendChild(wrap);
 }
 
 // ================= ルーター =================
@@ -620,7 +674,7 @@ function renderTitle(){
    '<button class="btn-ghost wfull" style="margin-top:8px;color:var(--danger)" onclick="resetDay()">今日のデータをリセット</button></div>'+
    '<div class="mut" style="text-align:center">計測=店到着〜出発（車移動は測らない）</div>';
 }
-function startDay(){ dayOf(curDate); carryOver(curDate); go("input"); }
+function startDay(){ dayOf(curDate); go("input"); }
 function resumeDay(){ const d=dayOf(curDate); go(d.phase); }
 function resetDay(){ if(confirm(curDate+" のデータを全部消す？")){ delete DB.days[curDate]; saveDB(); render(); } }
 
@@ -699,10 +753,18 @@ function renderInput(){
   chipCard.appendChild(form);
   el.appendChild(chipCard);
 
-  itemListCard(el,{title:"✅ 今日の項目", mut:"やること・気付きを追加（タグで種類分け）", date:curDate,
-    input:{defaultTags:["do"], defaultStore:null}});
+  const addCard=document.createElement("div"); addCard.className="card";
+  addCard.innerHTML='<b>＋ 追加</b><div class="mut">やること・気付きを追加（タグで種類分け）</div>';
+  entryInput(addCard,{date:curDate, defaultTags:["do"], org:"②", redraw:renderInput});
+  el.appendChild(addCard);
 
-  const nx=document.createElement("button"); nx.className="btn-ok big"; nx.textContent="④ 計画へ →";
+  const undoneN = entriesOf(curDate).filter(e=>e.done===false).length + pendingSends(curDate).length;
+  const noteBtn=document.createElement("button"); noteBtn.className="btn-ghost wfull"; noteBtn.style.marginTop="4px";
+  noteBtn.innerHTML="📓 ノートを開く"+(undoneN>0?' <span style="color:var(--warn)">⚠ 未完 '+undoneN+'件</span>':"");
+  noteBtn.onclick=()=>openNote();
+  el.appendChild(noteBtn);
+
+  const nx=document.createElement("button"); nx.className="btn-ok big"; nx.style.marginTop="10px"; nx.textContent="④ 計画へ →";
   nx.onclick=()=>{kpClose(); go("plan");};
   el.appendChild(nx);
 }
@@ -742,34 +804,42 @@ function renderPlan(){
   info.textContent=prev?("前回の記録: "+prev):"前日の記録なし";
   el.appendChild(info);
 
-  // 📬 昨日から届いた項目（carry 済み + 済・報告）
+  // 📬 未完の申送（消すまで毎日届く）
   const inbox=document.createElement("div"); inbox.className="card";
-  inbox.innerHTML='<b>📬 昨日から届いた項目</b><div class="mut">📝申送付きの未完了が自動で届く。済んだらチェック</div>';
-  const ilist=document.createElement("div");
-  const redrawInbox=()=>{
-    ilist.innerHTML="";
-    const carried=itemsOf(curDate).filter(it=>it.carriedFrom);
-    const reported=prev?itemsOf(prev).filter(it=>it.done&&it.tags.includes("send")):[];
-    if(carried.length===0&&reported.length===0){ ilist.innerHTML='<div class="mut" style="padding:6px 0">（なし）</div>'; return; }
-    carried.forEach(it=>ilist.appendChild(itemRow(it,{date:curDate,check:true,del:true,redraw:redrawInbox})));
-    reported.forEach(it=>ilist.appendChild(itemRow(it,{readOnly:true,badge:"✓済・報告"})));
-  };
-  redrawInbox();
-  inbox.appendChild(ilist); el.appendChild(inbox);
+  inbox.innerHTML='<b>📬 未完の申送（消すまで毎日届く）</b>';
+  const pend=pendingSends(curDate);
+  if(pend.length===0){ const em=document.createElement("div"); em.className="mut"; em.style.padding="6px 0"; em.textContent="（なし）"; inbox.appendChild(em); }
+  else pend.forEach(({date,e})=>inbox.appendChild(entRow(e,{date,showDate:true,redraw:renderPlan})));
+  el.appendChild(inbox);
 
-  // 📄 昨日のノート（read-only）
-  const ncard=document.createElement("div"); ncard.className="card";
-  ncard.innerHTML='<b>📄 昨日のノート</b>';
-  if(prev) noteEditor(ncard,prev,{readOnly:true});
-  else ncard.innerHTML+='<div class="mut" style="padding:6px 0">（ノートなし）</div>';
-  el.appendChild(ncard);
+  // ✓ 済・報告（前回分）
+  const reported=prevReported(curDate);
+  if(reported.length>0){
+    const rc=document.createElement("div"); rc.className="card";
+    rc.innerHTML='<b>✓ 済・報告（前回分）</b>';
+    reported.forEach(e=>rc.appendChild(entRow(e,{date:prev,showDate:true,redraw:renderPlan})));
+    el.appendChild(rc);
+  }
 
-  // ✅ 今日の項目（carry 分以外）+ 追加
-  itemListCard(el,{title:"✅ 今日の項目", mut:"今日やること・気付きを追加", date:curDate,
-    filter:it=>!it.carriedFrom,
-    input:{defaultTags:["do"], defaultStore:null}});
+  // ✅ 今日の項目
+  const tc=document.createElement("div"); tc.className="card";
+  tc.innerHTML='<b>✅ 今日の項目</b>';
+  const today=entriesOf(curDate).slice().sort((a,b)=>a.ts-b.ts);
+  if(today.length===0){ const em=document.createElement("div"); em.className="mut"; em.style.padding="6px 0"; em.textContent="（なし）"; tc.appendChild(em); }
+  else today.forEach(e=>tc.appendChild(entRow(e,{date:curDate,redraw:renderPlan})));
+  entryInput(tc,{date:curDate, defaultTags:["do"], org:"④", redraw:renderPlan});
+  el.appendChild(tc);
 
-  const nx=document.createElement("button"); nx.className="btn-ok big";
+  // ボタン行
+  const br=document.createElement("div"); br.className="row"; br.style.marginTop="8px";
+  const copyB=document.createElement("button"); copyB.className="btn-ghost"; copyB.style.flex="1"; copyB.textContent="📋 ノートからコピー";
+  copyB.onclick=()=>openNote({pick:true,scope:"all"});
+  const noteB=document.createElement("button"); noteB.className="btn-ghost"; noteB.style.flex="1"; noteB.textContent="📓 ノートを開く";
+  noteB.onclick=()=>openNote();
+  br.appendChild(copyB); br.appendChild(noteB);
+  el.appendChild(br);
+
+  const nx=document.createElement("button"); nx.className="btn-ok big"; nx.style.marginTop="10px";
   nx.textContent = DB.course.load==="morning" ? "⑰ 積み込みへ →" : "⑥ 順番確認へ →";
   nx.onclick=()=>go(DB.course.load==="morning"?"loadAM":"order");
   el.appendChild(nx);
@@ -811,16 +881,16 @@ function renderLoad(mode){
   ecard.appendChild(stats); el.appendChild(ecard);
   renderLoadStats(mode,l);
 
-  itemListCard(el,{title:"✅ 項目（全体）", date:curDate,
-    filter:it=>it.store===null,
-    input:{defaultTags:["do"], defaultStore:null}});
+  const addCard=document.createElement("div"); addCard.className="card";
+  addCard.innerHTML='<b>＋ 追加</b>';
+  entryInput(addCard,{date:curDate, defaultTags:[], org:"⑰", redraw:()=>renderLoad(mode)});
+  el.appendChild(addCard);
 
-  const ncard=document.createElement("div"); ncard.className="card";
-  ncard.innerHTML='<b>📄 ノート</b>';
-  noteEditor(ncard,curDate);
-  el.appendChild(ncard);
+  const noteBtn=document.createElement("button"); noteBtn.className="btn-ghost wfull"; noteBtn.style.marginTop="4px"; noteBtn.textContent="📓 ノートを開く";
+  noteBtn.onclick=()=>openNote();
+  el.appendChild(noteBtn);
 
-  const nx=document.createElement("button"); nx.className="btn-ok big";
+  const nx=document.createElement("button"); nx.className="btn-ok big"; nx.style.marginTop="10px";
   nx.textContent = mode==="AM" ? "⑥ 順番確認へ →" : "⑱ 棚卸しへ →";
   nx.onclick=()=>go(mode==="AM"?"order":"handover");
   el.appendChild(nx);
@@ -898,10 +968,28 @@ function renderCheck(){
     r.appendChild(cb); r.appendChild(document.createTextNode((i+1)+". "+label));
     el.appendChild(r);
   });
+  const mc=document.createElement("div"); mc.className="card";
+  const label=document.createElement("div"); label.innerHTML='<b>🚗 出発メーター</b>';
+  mc.appendChild(label);
+  const mt=document.createElement("div"); mt.className="mut"; mt.style.marginTop="4px";
+  mt.textContent = d.meterStart ? ("記入 "+fmtHM(d.meterStart.ts)) : "未記入";
+  const mr=document.createElement("div"); mr.className="row sb"; mr.style.marginTop="6px";
+  mr.innerHTML='<span class="mut">値</span>';
+  const mi=mkKpField(d.meterStart?d.meterStart.v:"", v=>{
+    setMeter(curDate,"meterStart",v);
+    mt.textContent = d.meterStart ? ("記入 "+fmtHM(d.meterStart.ts)) : "未記入";
+  });
+  mr.appendChild(mi);
+  mc.appendChild(mr); mc.appendChild(mt);
+  el.appendChild(mc);
+
   const ok=d.checklist.every(Boolean);
   const nx=document.createElement("button"); nx.className="btn-ok big"; nx.disabled=!ok;
   nx.textContent="🚚 出発 → "+(d.order&&d.order[0]?d.order[0]+"店":"");
-  nx.onclick=()=>go("stores");
+  nx.onclick=()=>{
+    if(!d.meterStart && !confirm("出発メーターが未記入。このまま出発する？")) return;
+    go("stores");
+  };
   el.appendChild(nx);
 }
 
@@ -931,6 +1019,15 @@ function renderStore(){
   const tcard=document.createElement("div"); tcard.className="card";
   tcard.innerHTML='<div class="timer" id="timerDisp">'+fmtTimer(s.steps[s.cur]?liveSec(s,s.cur):0)+'</div>'+
     '<div class="mut" style="text-align:center" id="curStepName">'+(s.steps[s.cur]?(s.steps[s.cur].name+(s.running?" ⏱":"")):"完了")+'</div>';
+  const qtyKeys = s.type==="C" ? [["アイス数","アイス"],["冷食数","冷食"],["バラ数","バラ"],["オリコン数","オリコン"]]
+    : s.type==="A" ? [["アイス数","アイス"],["冷食数","冷食"]]
+    : [["ケース(アイス+冷食)数","ケース"]];
+  const qtyBits=qtyKeys.filter(([k])=>s.qty[k]!==undefined&&s.qty[k]!==null&&s.qty[k]!=="");
+  if(qtyBits.length){
+    const qtyRow=document.createElement("div"); qtyRow.style.cssText="text-align:center;margin-top:4px";
+    qtyBits.forEach(([k,lab])=>{ const p=document.createElement("span"); p.className="tagpill"; p.textContent=lab+" "+s.qty[k]; qtyRow.appendChild(p); });
+    tcard.appendChild(qtyRow);
+  }
   const gr=document.createElement("div"); gr.className="grid2"; gr.style.marginTop="12px";
   const bn=document.createElement("button"); bn.className="btn-ok big";
   bn.textContent = s.running ? "次へ ▶" : (s.steps.some(x=>x.sec>0||x.done)?"▶ 再開":"▶ 開始");
@@ -941,10 +1038,19 @@ function renderStore(){
   gr.appendChild(bn); gr.appendChild(bp); tcard.appendChild(gr);
   el.appendChild(tcard);
 
-  // 項目（この店+全体）
-  itemListCard(el,{title:"✅ 項目（"+ctx.id+"店+全体）", date:ctx.date,
-    filter:it=>it.store===ctx.id||it.store===null,
-    input:{defaultTags:["do"], defaultStore:ctx.id}});
+  // チェック+片付け突入時の未完通知バナー
+  const curStep=s.steps[s.cur];
+  if(curStep && curStep.name==="チェック+片付け"){
+    const relType=courseType(ctx.id);
+    const undoneN=entriesOf(curDate).concat(pendingSends(curDate).map(x=>x.e))
+      .filter(e=>e.done===false&&(e.store===ctx.id||e.store===null||e.type===relType)).length;
+    if(undoneN>0){
+      const notib=document.createElement("div"); notib.className="notib";
+      notib.innerHTML='<div>⚠ 未完のやることが '+undoneN+' 件</div><div class="mut">タップで📓ノートを開く</div>';
+      notib.onclick=()=>{ ui.recFilter="do"; openNote(); };
+      el.appendChild(notib);
+    }
+  }
 
   // 棚割差（店永続）
   const tanaCard=document.createElement("div"); tanaCard.className="card";
@@ -974,6 +1080,9 @@ function renderStore(){
   const tot=document.createElement("div"); tot.className="step"; tot.style.cssText="background:none;border-top:1px solid #30363d;border-radius:0;cursor:default";
   tot.innerHTML='<div class="nm"><b>合計</b><span class="mut">（合計外を除く）</span></div><div class="tm" id="stepTotal">'+fmtClock(totalSec(s))+'</div>';
   scard.appendChild(tot);
+  const totRaw=document.createElement("div"); totRaw.className="step"; totRaw.style.cssText="background:none;border-radius:0;cursor:default;padding-top:0";
+  totRaw.innerHTML='<div class="nm"><span class="mut">合計（全部込み）</span></div><div class="tm mut" id="stepTotalRaw">'+fmtClock(rawTotalSec(s))+'</div>';
+  scard.appendChild(totRaw);
   el.appendChild(scard);
 
   // オリコン後入力（C店のみ）
@@ -999,7 +1108,7 @@ function renderStore(){
 
   // ⑮ 次店舗へ / 一覧へ戻る
   const nx=document.createElement("button"); nx.className="btn-accent big"; nx.style.marginTop="10px";
-  if(ctx.free){ nx.textContent="← 一覧へ戻る"; nx.onclick=()=>{ui.freeCtx=null; ui.mode=ui.prevMode||"title"; render(); openList();}; }
+  if(ctx.free){ nx.textContent="← 一覧へ戻る"; nx.onclick=()=>{ui.freeCtx=null; const p=dayOf(curDate).phase; ui.mode=(DAY_PHASES.includes(p)&&p!=="title"&&p!=="done")?p:"title"; render(); openList();}; }
   else {
     const last = d.storeIdx>=d.order.length-1;
     nx.textContent = last ? "⑯ 帰社へ →" : "⑮ 次店舗へ → "+d.order[d.storeIdx+1]+"店";
@@ -1015,12 +1124,12 @@ function renderDrawerBar(ctx){
   if(!bar){ bar=document.createElement("div"); bar.id="drawerBar"; bar.className="drawerbar"; document.body.appendChild(bar); }
   bar.classList.remove("hide");
   bar.innerHTML="";
-  const d=dayOf(ctx.date);
+  const today=todayStr();
+  const hasUndoneDo = entriesOf(today).some(e=>e.done===false) || pendingSends(today).length>0;
   const btns=[
-    ["📖","今朝の項目",()=>morningSheet(ctx),itemsOf(ctx.date).some(it=>it.carriedFrom)],
+    ["📓","ノート",()=>openNote(),hasUndoneDo],
     ["📐","棚割差",()=>tanawariSheet(ctx),tanawariOf(ctx.id).tanawari.length>0],
-    ["📄","ノート",()=>noteSheet(ctx),d.notes.length>0],
-    ["📖","記録",()=>openRecords(),false],
+    ["📓","全日",()=>openNote({scope:"all"}),false],
   ];
   btns.forEach(([ico,lab,fn,has])=>{
     const b=document.createElement("button");
@@ -1029,27 +1138,8 @@ function renderDrawerBar(ctx){
   });
 }
 function hideDrawerBar(){ const bar=document.getElementById("drawerBar"); if(bar)bar.classList.add("hide"); }
-function morningSheet(ctx){
-  const prev=prevRecordedDate(ctx.date);
-  openSheet("📖 今朝の項目",b=>{
-    const carried=itemsOf(ctx.date).filter(it=>it.carriedFrom);
-    const reported=prev?itemsOf(prev).filter(it=>it.done&&it.tags.includes("send")):[];
-    if(carried.length===0&&reported.length===0){
-      const e=document.createElement("div"); e.className="mut"; e.textContent="（今朝届いた項目はない）"; b.appendChild(e);
-    }
-    carried.forEach(it=>b.appendChild(itemRow(it,{readOnly:true})));
-    reported.forEach(it=>b.appendChild(itemRow(it,{readOnly:true,badge:"✓済・報告"})));
-    const h=document.createElement("div"); h.className="mut"; h.style.marginTop="12px"; h.textContent="📄 昨日のノート";
-    b.appendChild(h);
-    if(prev) noteEditor(b,prev,{readOnly:true});
-    else { const e=document.createElement("div"); e.className="mut"; e.textContent="（ノートなし）"; b.appendChild(e); }
-  });
-}
 function tanawariSheet(ctx){
   openSheet("📐 棚割差（"+ctx.id+"店）",b=>tanawariEditor(b,ctx.id));
-}
-function noteSheet(ctx){
-  openSheet("📄 今日のノート",b=>noteEditor(b,ctx.date));
 }
 function nextStart(ctx){
   const s=storeOf(ctx.date,ctx.id);
@@ -1132,14 +1222,38 @@ function renderPUInto(box,s){
 // ================= ⑯ 帰社時チェック =================
 function renderReturn(){
   const el=document.getElementById("scrReturn");
-  dayOf(curDate);
+  const d=dayOf(curDate);
   el.innerHTML="";
-  itemListCard(el,{title:"⑯ 帰社時チェック（全体の残り項目）", mut:"店に紐づかない未完了の項目。済んだらチェック", date:curDate,
-    filter:it=>it.store===null&&!it.done,
-    input:{defaultTags:["do"], defaultStore:null}});
+
+  const tc=document.createElement("div"); tc.className="card";
+  tc.innerHTML='<b>⑯ 帰社時チェック（全体の残り項目）</b><div class="mut">店に紐づかない未完了の項目。済んだらチェック</div>';
+  const arr=entriesOf(curDate).filter(e=>e.store===null&&e.done===false);
+  if(arr.length===0){ const em=document.createElement("div"); em.className="mut"; em.style.padding="6px 0"; em.textContent="（なし）"; tc.appendChild(em); }
+  else arr.forEach(e=>tc.appendChild(entRow(e,{date:curDate,redraw:renderReturn})));
+  entryInput(tc,{date:curDate, defaultTags:["do"], org:"⑯", redraw:renderReturn});
+  el.appendChild(tc);
+
+  const mc=document.createElement("div"); mc.className="card";
+  const label=document.createElement("div"); label.innerHTML='<b>🚗 帰社メーター</b>';
+  mc.appendChild(label);
+  const mt=document.createElement("div"); mt.className="mut"; mt.style.marginTop="4px";
+  mt.textContent = d.meterEnd ? ("記入 "+fmtHM(d.meterEnd.ts)) : "未記入";
+  const mr=document.createElement("div"); mr.className="row sb"; mr.style.marginTop="6px";
+  mr.innerHTML='<span class="mut">値</span>';
+  const mi=mkKpField(d.meterEnd?d.meterEnd.v:"", v=>{
+    setMeter(curDate,"meterEnd",v);
+    mt.textContent = d.meterEnd ? ("記入 "+fmtHM(d.meterEnd.ts)) : "未記入";
+  });
+  mr.appendChild(mi);
+  mc.appendChild(mr); mc.appendChild(mt);
+  el.appendChild(mc);
+
   const nx=document.createElement("button"); nx.className="btn-ok big";
   nx.textContent = DB.course.load==="night" ? "⑰ 積み込み（夜積み）へ →" : "⑱ 棚卸しへ →";
-  nx.onclick=()=>go(DB.course.load==="night"?"loadPM":"handover");
+  nx.onclick=()=>{
+    if(!d.meterEnd && !confirm("帰社メーターが未記入。このまま進む？")) return;
+    go(DB.course.load==="night"?"loadPM":"handover");
+  };
   el.appendChild(nx);
 }
 
@@ -1147,45 +1261,44 @@ function renderReturn(){
 function renderHandover(){
   const el=document.getElementById("scrHandover");
   const d=dayOf(curDate);
-  el.innerHTML='<div class="mut">今日の項目を棚卸し。📝申送を付けた未完了は翌朝④に届く。完了分は📝で「✓済・報告」として翌朝に出せる。</div>';
+  el.innerHTML='<div class="mut">📝申送を付けた未完は消すまで毎日届く。完了+📝は明朝「✓済・報告」に出る</div>';
 
   const uc=document.createElement("div"); uc.className="card";
-  uc.innerHTML='<b>⏳ 未完了の項目</b><div class="mut">📝=翌朝へ申し送る ／ ✓=完了 ／ −=削除</div>';
-  const ulist=document.createElement("div");
-  const dc=document.createElement("div"); dc.className="card";
-  dc.innerHTML='<b>✔ 完了した項目</b><div class="mut">📝を付けると翌朝「✓済・報告」として表示される</div>';
-  const dlist=document.createElement("div");
-  const redraw=()=>{
-    ulist.innerHTML=""; dlist.innerHTML="";
-    const undone=itemsOf(curDate).filter(it=>!it.done);
-    const done=itemsOf(curDate).filter(it=>it.done);
-    if(undone.length===0) ulist.innerHTML='<div class="mut" style="padding:6px 0">（なし）</div>';
-    else undone.forEach(it=>ulist.appendChild(itemRow(it,{date:curDate,sendToggle:true,doneBtn:true,del:true,redraw})));
-    if(done.length===0) dlist.innerHTML='<div class="mut" style="padding:6px 0">（なし）</div>';
-    else done.forEach(it=>dlist.appendChild(itemRow(it,{date:curDate,sendToggle:true,redraw})));
-  };
-  redraw();
-  uc.appendChild(ulist);
-  itemInput(uc,{date:curDate, defaultTags:["send"], defaultStore:null, redraw, placeholder:"申し送りを追加"});
+  uc.innerHTML='<b>⏳ 未完（やる/申送）</b>';
+  const undone=entriesOf(curDate).filter(e=>e.done===false);
+  if(undone.length===0){ const em=document.createElement("div"); em.className="mut"; em.style.padding="6px 0"; em.textContent="（なし）"; uc.appendChild(em); }
+  else undone.forEach(e=>uc.appendChild(entRow(e,{date:curDate,sendBtn:true,redraw:renderHandover})));
   el.appendChild(uc);
-  dc.appendChild(dlist);
-  el.appendChild(dc);
 
-  const nc=document.createElement("div"); nc.className="card";
-  nc.innerHTML='<b>📄 ノート整理</b>';
-  noteEditor(nc,curDate);
-  el.appendChild(nc);
+  const dc=document.createElement("div"); dc.className="card";
+  dc.innerHTML='<b>✔ 完了</b>';
+  const done=entriesOf(curDate).filter(e=>e.done===true);
+  if(done.length===0){ const em=document.createElement("div"); em.className="mut"; em.style.padding="6px 0"; em.textContent="（なし）"; dc.appendChild(em); }
+  else done.forEach(e=>dc.appendChild(entRow(e,{date:curDate,sendBtn:true,redraw:renderHandover})));
+  el.appendChild(dc);
 
   const lc=document.createElement("div"); lc.className="card";
   lc.innerHTML='<b>📚 今日の学び</b>';
-  const learns=itemsOf(curDate).filter(it=>it.tags.includes("learn"));
-  if(learns.length===0){ const e=document.createElement("div"); e.className="mut"; e.style.padding="6px 0"; e.textContent="（今日の学びはなし）"; lc.appendChild(e); }
-  else learns.forEach(it=>lc.appendChild(itemRow(it,{readOnly:true})));
-  const lm=document.createElement("div"); lm.className="mut"; lm.style.marginTop="6px"; lm.textContent="学びは消えず 📖記録 に溜まる";
+  const learns=entriesOf(curDate).filter(e=>e.tags.includes("learn"));
+  if(learns.length===0){ const em=document.createElement("div"); em.className="mut"; em.style.padding="6px 0"; em.textContent="（なし）"; lc.appendChild(em); }
+  else learns.forEach(e=>lc.appendChild(entRow(e,{date:curDate,redraw:renderHandover})));
+  const lm=document.createElement("div"); lm.className="mut"; lm.style.marginTop="6px"; lm.textContent="学びは消えず📓に溜まる";
   lc.appendChild(lm);
   el.appendChild(lc);
 
-  const nx=document.createElement("button"); nx.className="btn-ok big";
+  const nc=document.createElement("div"); nc.className="card";
+  nc.innerHTML='<b>📄 ノート/メモ</b>';
+  const memos=entriesOf(curDate).filter(e=>e.done===null&&!e.tags.includes("learn"));
+  if(memos.length===0){ const em=document.createElement("div"); em.className="mut"; em.style.padding="6px 0"; em.textContent="（なし）"; nc.appendChild(em); }
+  else memos.forEach(e=>nc.appendChild(entRow(e,{date:curDate,redraw:renderHandover})));
+  entryInput(nc,{date:curDate, defaultTags:["send"], org:"⑱", redraw:renderHandover});
+  el.appendChild(nc);
+
+  const copyB=document.createElement("button"); copyB.className="btn-ghost wfull"; copyB.style.marginTop="4px"; copyB.textContent="📋 ノートからコピー";
+  copyB.onclick=()=>openNote({pick:true,scope:"all"});
+  el.appendChild(copyB);
+
+  const nx=document.createElement("button"); nx.className="btn-ok big"; nx.style.marginTop="8px";
   nx.textContent="✔ 今日を終える";
   nx.onclick=()=>{ d.handoverDone=true; d.phase="done"; saveDB(); ui.mode="title"; render(); toast("おつかれさま 🎉"); };
   el.appendChild(nx);
@@ -1203,6 +1316,33 @@ function renderList(){
   const date=ui.listDate;
   const d=dayOf(date);
   el.innerHTML="";
+
+  // 今日の操作
+  const opCard=document.createElement("div"); opCard.className="card";
+  opCard.innerHTML='<b>今日の操作</b>';
+  const opRow=document.createElement("div"); opRow.className="grid2"; opRow.style.marginTop="8px";
+  const contB=document.createElement("button"); contB.className="btn-accent"; contB.textContent="▶ 続きから";
+  contB.onclick=()=>{
+    closeList();
+    ui.freeCtx=null;
+    const p=dayOf(todayStr()).phase;
+    if(DAY_PHASES.includes(p)&&p!=="title"&&p!=="done"){ go(p); } else { ui.mode="title"; render(); }
+  };
+  opRow.appendChild(contB);
+  const noteOpB=document.createElement("button"); noteOpB.className="btn-ghost"; noteOpB.textContent="📓 ノート";
+  noteOpB.onclick=()=>openNote();
+  opRow.appendChild(noteOpB);
+  if(date===todayStr()){
+    const loadB=document.createElement("button"); loadB.className="btn-ghost"; loadB.textContent="⑰ 積み込みへ";
+    loadB.onclick=()=>{ go(DB.course.load==="morning"?"loadAM":"loadPM"); closeList(); };
+    opRow.appendChild(loadB);
+    const hoB=document.createElement("button"); hoB.className="btn-ghost"; hoB.textContent="⑱ 棚卸しへ";
+    hoB.onclick=()=>{ go("handover"); closeList(); };
+    opRow.appendChild(hoB);
+  }
+  opCard.appendChild(opRow);
+  el.appendChild(opCard);
+
   const card=document.createElement("div"); card.className="card";
   const r1=document.createElement("div"); r1.className="row sb";
   r1.innerHTML='<span class="mut">日付</span>';
@@ -1217,6 +1357,14 @@ function renderList(){
     r3.innerHTML='<span class="mut">積み込み</span><b>'+fmtClock(loadingSec(d.loading))+'</b>';
     card.appendChild(r3);
   }
+  if(d.meterStart||d.meterEnd){
+    const r4=document.createElement("div"); r4.className="row sb"; r4.style.marginTop="8px";
+    const bits=[];
+    if(d.meterStart) bits.push("🚗 出発 "+d.meterStart.v+"（"+fmtHM(d.meterStart.ts)+"）");
+    if(d.meterEnd) bits.push("帰社 "+d.meterEnd.v+"（"+fmtHM(d.meterEnd.ts)+"）");
+    r4.innerHTML='<span class="mut">メーター</span><b style="font-size:13px">'+bits.join(" / ")+'</b>';
+    card.appendChild(r4);
+  }
   el.appendChild(card);
 
   const ids = DB.course.stores.map(s=>s.id).concat(Object.keys(d.stores).filter(id=>!DB.course.stores.some(s=>s.id===id)));
@@ -1226,19 +1374,21 @@ function renderList(){
     if(s){
       const anyTime=s.steps.some(x=>x.sec>0);
       const allDone=s.steps.filter(x=>!isExcluded(s,x)).every(x=>x.done);
-      if(allDone&&anyTime) badge='<span class="badge done">完了 '+fmtClock(totalSec(s))+'</span>';
-      else if(anyTime||s.running) badge='<span class="badge active">計測中 '+fmtClock(totalSec(s))+'</span>';
+      let measured=false;
+      if(allDone&&anyTime){ badge='<span class="badge done">完了 '+fmtClock(totalSec(s))+'</span>'; measured=true; }
+      else if(anyTime||s.running){ badge='<span class="badge active">計測中 '+fmtClock(totalSec(s))+'</span>'; measured=true; }
       const bits=[];
       const cc=caseCount(s); if(cc)bits.push("ケース"+cc);
       const br=parseFloat(s.qty["バラ数"]); if(isFinite(br)&&br>0)bits.push("バラ"+br);
-      const dayItems=(d.items||[]).filter(it=>it.store===id);
-      if(dayItems.some(it=>!it.done))bits.push("✅");
-      if(dayItems.some(it=>(it.tags||[]).includes("learn")))bits.push("📚");
+      const dayEntries=(d.entries||[]).filter(e=>e.store===id);
+      if(dayEntries.some(e=>e.done===false))bits.push("✅");
+      if(dayEntries.some(e=>e.tags.includes("learn")))bits.push("📚");
+      if(measured)bits.push("全部込み "+fmtClock(rawTotalSec(s)));
       if(bits.length)sub=bits.join(" ／ ");
     }
     const div=document.createElement("div"); div.className="store-item";
     div.innerHTML='<div><div class="nm">'+id+'店</div><div class="mut">'+sub+'</div></div>'+badge;
-    div.onclick=()=>{ ui.prevMode=ui.mode; ui.freeCtx={date,id,free:true}; closeList(); ui.mode="stores"; render(); };
+    div.onclick=()=>{ ui.freeCtx={date,id,free:true}; closeList(); ui.mode="stores"; render(); };
     el.appendChild(div);
   });
   const rd=document.createElement("button"); rd.className="btn-ghost wfull"; rd.style.cssText="margin-top:10px;color:var(--danger)";
@@ -1247,75 +1397,142 @@ function renderList(){
   el.appendChild(rd);
 }
 
-// ================= 📖 記録 =================
-function openRecords(){
+// ================= 📓 ノート =================
+// opts: {pick, scope}
+function openNote(opts){
+  opts=opts||{};
+  ui.notePick=!!opts.pick;
+  if(opts.scope) ui.noteScope=opts.scope;
   document.getElementById("recOv").classList.remove("hide");
-  renderRecords();
+  renderNote();
 }
-function closeRecords(){ document.getElementById("recOv").classList.add("hide"); }
-function renderRecords(){
+function closeNote(){ document.getElementById("recOv").classList.add("hide"); }
+function renderNoteHeader(){
+  const t=document.getElementById("noteHdrTitle");
+  const b=document.getElementById("noteHdrBtn");
+  if(ui.notePick){
+    t.textContent="コピー先: 今日のやること";
+    b.textContent="✕";
+    b.onclick=()=>{ui.notePick=false; renderNote();};
+  } else {
+    t.textContent="📓 ノート";
+    b.textContent="✕ 閉じる";
+    b.onclick=closeNote;
+  }
+}
+function matchesNoteFilter(e){
+  if(ui.recFilter!=="all" && !e.tags.includes(ui.recFilter)) return false;
+  if(ui.noteStore){
+    if(ui.noteStore.startsWith("type:")){
+      const t=ui.noteStore.slice(5);
+      if(!(e.type===t || (e.store && e.store.startsWith(t+"-")))) return false;
+    } else if(e.store!==ui.noteStore) return false;
+  }
+  return true;
+}
+function emptyMsg(text){ const e=document.createElement("div"); e.className="mut"; e.style.padding="10px 0"; e.textContent=text; return e; }
+function renderNote(){
+  renderNoteHeader();
   const el=document.getElementById("recInner");
   el.innerHTML="";
+
+  // 範囲チップ
+  const rng=document.createElement("div"); rng.className="chips";
+  [["today","今日+未完申送"],["all","全部の日"]].forEach(([k,lab])=>{
+    const c=document.createElement("div"); c.className="chip"+(ui.noteScope===k?" on":"");
+    c.textContent=lab;
+    c.onclick=()=>{ui.noteScope=k; renderNote();};
+    rng.appendChild(c);
+  });
+  el.appendChild(rng);
+
+  // タグチップ
   const chips=document.createElement("div"); chips.className="chips";
-  [["all","すべて"],["do","✅やる"],["note","📄ノート"],["learn","📚学び"],["tana","📐棚割差"],["line","📱LINE"]].forEach(([key,label])=>{
-    const c=document.createElement("div"); c.className="chip"+(ui.recFilter===key?" on":"");
+  const tagList=[["all","すべて"]].concat(Object.keys(TAGS).map(k=>[k,TAGS[k].emoji+TAGS[k].label]));
+  tagList.forEach(([key,label])=>{
+    const c=document.createElement("div"); c.className="chip"+(key==="send"?" send":"")+(ui.recFilter===key?" on":"");
     c.textContent=label;
-    c.onclick=()=>{ui.recFilter=key; renderRecords();};
+    c.onclick=()=>{ui.recFilter=key; renderNote();};
     chips.appendChild(c);
   });
   el.appendChild(chips);
 
-  const f=ui.recFilter;
-  if(f==="tana"){
-    // 棚割差は日付に紐づかない店永続メモ → 店別一覧
-    const ids=DB.course.stores.map(s=>s.id).concat(Object.keys(DB.storeMeta||{}).filter(id=>!DB.course.stores.some(s=>s.id===id)));
+  // 🏬タイプ + 店チップ
+  const schips=document.createElement("div"); schips.className="chips";
+  ["C","A","S"].forEach(t=>{
+    const key="type:"+t;
+    const c=document.createElement("div"); c.className="chip"+(ui.noteStore===key?" on":"");
+    c.style.cssText="padding:5px 10px;font-size:12px";
+    c.textContent="🏬 "+t;
+    c.onclick=()=>{ui.noteStore=(ui.noteStore===key?null:key); renderNote();};
+    schips.appendChild(c);
+  });
+  DB.course.stores.forEach(cs=>{
+    const c=document.createElement("div"); c.className="chip"+(ui.noteStore===cs.id?" on":"");
+    c.style.cssText="padding:5px 10px;font-size:12px";
+    c.textContent=cs.id;
+    c.onclick=()=>{ui.noteStore=(ui.noteStore===cs.id?null:cs.id); renderNote();};
+    schips.appendChild(c);
+  });
+  el.appendChild(schips);
+
+  if(ui.recFilter==="tana") renderNoteTana(el);
+  else renderNoteEntries(el);
+
+  const addCard=document.createElement("div"); addCard.className="card";
+  addCard.innerHTML='<b>＋ 追加</b><div class="mut">やること・メモ・学びなど何でも同じ器に追加</div>';
+  entryInput(addCard,{date:todayStr(), org:"📓", redraw:renderNote});
+  el.appendChild(addCard);
+}
+function renderNoteEntries(el){
+  if(ui.noteScope==="today"){
+    const rows=[];
+    pendingSends(todayStr()).forEach(({date,e})=>{
+      if(matchesNoteFilter(e)) rows.push(entRow(e,{date,redraw:renderNote,pick:ui.notePick,showDate:true}));
+    });
+    entriesOf(todayStr()).filter(matchesNoteFilter).sort((a,b)=>a.ts-b.ts).forEach(e=>{
+      rows.push(entRow(e,{date:todayStr(),redraw:renderNote,pick:ui.notePick,showDate:false}));
+    });
+    if(rows.length===0) el.appendChild(emptyMsg("（該当エントリなし）"));
+    else rows.forEach(r=>el.appendChild(r));
+  } else {
+    const dates=Object.keys(DB.days).sort().reverse();
     let any=false;
-    ids.forEach(id=>{
-      const meta=DB.storeMeta&&DB.storeMeta[id];
-      if(!meta||!meta.tanawari||meta.tanawari.length===0) return;
+    dates.forEach(date=>{
+      const arr=entriesOf(date).filter(matchesNoteFilter).sort((a,b)=>a.ts-b.ts);
+      if(arr.length===0) return;
       any=true;
       const card=document.createElement("div"); card.className="card";
-      const h=document.createElement("b"); h.textContent="📐 "+id+"店"; card.appendChild(h);
-      meta.tanawari.forEach(t=>{
-        const r=document.createElement("div"); r.className="todo-row";
-        const sp=document.createElement("span"); sp.textContent=t.text; r.appendChild(sp);
-        card.appendChild(r);
-      });
+      const h=document.createElement("div"); h.innerHTML='<b>'+date+'</b>';
+      card.appendChild(h);
+      arr.forEach(e=>card.appendChild(entRow(e,{date,redraw:renderNote,pick:ui.notePick,showDate:false})));
       el.appendChild(card);
     });
-    if(!any){ const e=document.createElement("div"); e.className="mut"; e.style.padding="10px 0"; e.textContent="（棚割差の記録はまだない）"; el.appendChild(e); }
-    return;
+    if(!any) el.appendChild(emptyMsg("（該当エントリなし）"));
   }
-
-  const dates=Object.keys(DB.days).sort().reverse();
+}
+function renderNoteTana(el){
+  // 棚割差は日付に紐づかない店永続メモ → 店別一覧
+  let ids=DB.course.stores.map(s=>s.id).concat(Object.keys(DB.storeMeta||{}).filter(id=>!DB.course.stores.some(s=>s.id===id)));
+  if(ui.noteStore){
+    if(ui.noteStore.startsWith("type:")){ const t=ui.noteStore.slice(5); ids=ids.filter(id=>courseType(id)===t); }
+    else ids=ids.filter(id=>id===ui.noteStore);
+  }
   let any=false;
-  dates.forEach(date=>{
-    const d=DB.days[date];
-    if(!d) return;
-    let items=(d.items||[]).filter(it=>!it.carriedFrom); // carry コピーは出自日の原本を表示
-    let notes=d.notes||[];
-    if(f==="note"){ items=[]; }
-    else if(f!=="all"){ items=items.filter(it=>(it.tags||[]).includes(f)); notes=notes.filter(nt=>(nt.tags||[]).includes(f)); }
-    if(items.length===0&&notes.length===0) return;
+  ids.forEach(id=>{
+    const meta=DB.storeMeta&&DB.storeMeta[id];
+    if(!meta||!meta.tanawari||meta.tanawari.length===0) return;
     any=true;
     const card=document.createElement("div"); card.className="card";
-    const h=document.createElement("div"); h.innerHTML='<b>'+date+'</b>';
-    card.appendChild(h);
-    items.forEach(it=>card.appendChild(itemRow(it,{readOnly:true})));
-    notes.forEach(nt=>{
-      const hb=document.createElement("div"); hb.className="hbox"; hb.style.borderLeftColor="var(--accent)";
-      const tx=document.createElement("div"); tx.textContent=nt.text; hb.appendChild(tx);
-      if((nt.tags||[]).length){
-        const foot=document.createElement("div"); foot.style.marginTop="6px";
-        nt.tags.forEach(k=>{ const t=TAGS[k]; if(!t)return;
-          const p=document.createElement("span"); p.className="tagpill"; p.style.marginLeft="0"; p.style.marginRight="4px"; p.textContent=t.emoji+t.label; foot.appendChild(p); });
-        hb.appendChild(foot);
-      }
-      card.appendChild(hb);
+    const h=document.createElement("b"); h.textContent="📐 "+id+"店"; card.appendChild(h);
+    meta.tanawari.forEach(t=>{
+      const r=document.createElement("div"); r.className="todo-row";
+      const sp=document.createElement("span"); sp.textContent=t.text; r.appendChild(sp);
+      card.appendChild(r);
     });
     el.appendChild(card);
   });
-  if(!any){ const e=document.createElement("div"); e.className="mut"; e.style.padding="10px 0"; e.textContent="（記録はまだない）"; el.appendChild(e); }
+  if(!any) el.appendChild(emptyMsg("（棚割差の記録はまだない）"));
 }
 
 // ================= 入出力 =================
@@ -1329,7 +1546,7 @@ function importJSON(e){
   const f=e.target.files[0]; if(!f)return;
   const r=new FileReader();
   r.onload=()=>{ try{ let o=JSON.parse(r.result);
-      if(o&&o.days){ if(!o.version)o=migrateV1(o); if(o.version===2)o=migrateV2(o); if(!o.course)o.course=defaultCourse(); if(!o.storeMeta)o.storeMeta={}; DB=o; saveDB(); render(); toast("インポートした"); }
+      if(o&&o.days){ if(!o.version)o=migrateV1(o); if(o.version===2)o=migrateV2(o); if(o.version===3)o=migrateV3(o); if(!o.course)o.course=defaultCourse(); if(!o.storeMeta)o.storeMeta={}; DB=o; saveDB(); render(); toast("インポートした"); }
       else toast("形式が違う"); }catch(err){ toast("読み込み失敗"); } };
   r.readAsText(f); e.target.value="";
 }
@@ -1346,6 +1563,7 @@ function tick(){
     const cn=document.getElementById("curStepName"); if(cn) cn.textContent=st?(st.name+(s.running?" ⏱":"")):"完了";
     const tm=document.getElementById("tm"+s.cur); if(tm&&st) tm.textContent=fmtClock(liveSec(s,s.cur)).replace(/^0:/,"");
     const tt=document.getElementById("stepTotal"); if(tt) tt.textContent=fmtClock(totalSec(s));
+    const ttr=document.getElementById("stepTotalRaw"); if(ttr) ttr.textContent=fmtClock(rawTotalSec(s));
     if(s.running) renderPUInto(document.getElementById("puList"),s);
   } else if(ui.mode==="loadAM"||ui.mode==="loadPM"){
     const l=loadingOf(curDate);
